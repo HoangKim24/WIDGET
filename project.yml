@@ -21,8 +21,6 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.example.lichtuan
         INFOPLIST_FILE: LichTuanApp/Info.plist
         CODE_SIGN_ENTITLEMENTS: LichTuanApp/LichTuanApp.entitlements
-        CODE_SIGN_STYLE: Automatic
-        DEVELOPMENT_TEAM: ${APPLE_TEAM_ID}
     dependencies:
       - target: LichTuanWidget
 
@@ -39,8 +37,6 @@ targets:
         INFOPLIST_FILE: LichTuanWidget/Info.plist
         APPLICATION_EXTENSION_API_ONLY: YES
         CODE_SIGN_ENTITLEMENTS: LichTuanWidget/LichTuanWidget.entitlements
-        CODE_SIGN_STYLE: Automatic
-        DEVELOPMENT_TEAM: ${APPLE_TEAM_ID}
 
   LichTuanAppTests:
     type: bundle.unit-test

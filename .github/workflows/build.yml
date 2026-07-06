@@ -20,10 +20,13 @@ jobs:
       - name: Install XcodeGen
         run: brew install xcodegen
 
+      - name: Preflight tool versions
+        run: |
+          xcodebuild -version
+          xcodegen --version
+
       - name: Generate Xcode project
         run: xcodegen generate
-        env:
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
       - name: Cache DerivedData
         uses: actions/cache@v4
@@ -68,10 +71,13 @@ jobs:
       - name: Install XcodeGen
         run: brew install xcodegen
 
+      - name: Preflight tool versions
+        run: |
+          xcodebuild -version
+          xcodegen --version
+
       - name: Generate Xcode project
         run: xcodegen generate
-        env:
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
       - name: Cache DerivedData
         uses: actions/cache@v4
@@ -135,10 +141,13 @@ jobs:
       - name: Install XcodeGen
         run: brew install xcodegen
 
+      - name: Preflight tool versions
+        run: |
+          xcodebuild -version
+          xcodegen --version
+
       - name: Generate Xcode project
         run: xcodegen generate
-        env:
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
       - name: Cache DerivedData
         uses: actions/cache@v4
@@ -149,34 +158,6 @@ jobs:
           key: ${{ runner.os }}-xcode-${{ hashFiles('project.yml') }}
           restore-keys: |
             ${{ runner.os }}-xcode-
-
-      - name: Prepare export options
-        run: |
-          if [ -z "${APPLE_TEAM_ID}" ]; then
-            echo "APPLE_TEAM_ID secret is required for archive/export." >&2
-            exit 1
-          fi
-
-          cat > ExportOptions.plist <<'EOF'
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-            <key>method</key>
-            <string>development</string>
-            <key>signingStyle</key>
-            <string>automatic</string>
-            <key>compileBitcode</key>
-            <false/>
-            <key>stripSwiftSymbols</key>
-            <true/>
-            <key>teamID</key>
-            <string>${APPLE_TEAM_ID}</string>
-          </dict>
-          </plist>
-          EOF
-        env:
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
       - name: Show archive build settings
         run: |
@@ -203,27 +184,25 @@ jobs:
             -configuration Release \
             -destination 'generic/platform=iOS' \
             -archivePath build/LichTuanApp.xcarchive \
-            DEVELOPMENT_TEAM=${{ secrets.APPLE_TEAM_ID }} \
-            CODE_SIGN_STYLE=Automatic \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
             -allowProvisioningUpdates \
             -allowProvisioningDeviceRegistration \
             archive | tee archive.log
 
-      - name: Export ipa
+      - name: Package unsigned ipa
         run: |
           set -o pipefail
-          xcodebuild \
-            -exportArchive \
-            -archivePath build/LichTuanApp.xcarchive \
-            -exportOptionsPlist ExportOptions.plist \
-            -exportPath exported | tee export.log
+          mkdir -p exported/Payload
+          cp -R build/LichTuanApp.xcarchive/Products/Applications/LichTuanApp.app exported/Payload/
+          ditto -c -k --sequesterRsrc --keepParent exported/Payload exported/LichTuanApp.ipa
 
       - name: Upload ipa artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: lich-tuan-ipa
-          path: exported/*.ipa
+          path: exported/LichTuanApp.ipa
 
       - name: Upload archive logs on failure
         if: failure()
@@ -232,4 +211,3 @@ jobs:
           name: archive-logs
           path: |
             archive.log
-            export.log

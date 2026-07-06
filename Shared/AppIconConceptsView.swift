@@ -5,11 +5,14 @@ struct AppIconConceptsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                Text("App Icon Concepts")
-                    .font(.title.bold())
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("App Icon Concepts")
+                        .font(.system(.largeTitle, design: .rounded, weight: .bold))
 
-                Text("Ba hướng phối màu/gradient khác nhau để chọn trước khi xuất file icon thật.")
-                    .foregroundStyle(.secondary)
+                    Text("Ba hướng phối màu/gradient khác nhau để chọn trước khi xuất file icon thật.")
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
 
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
                     AppIconCard(
@@ -50,7 +53,17 @@ private struct AppIconCard: View {
             ZStack {
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
                     .fill(background)
-                    .frame(height: 180)
+                    .frame(height: 190)
+
+                Circle()
+                    .fill(.white.opacity(0.10))
+                    .frame(width: 92, height: 92)
+                    .offset(x: -54, y: -42)
+
+                Circle()
+                    .fill(.black.opacity(0.10))
+                    .frame(width: 120, height: 120)
+                    .offset(x: 54, y: 48)
 
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
                     .fill(.white.opacity(0.12))
@@ -63,12 +76,23 @@ private struct AppIconCard: View {
                     .shadow(color: .black.opacity(0.15), radius: 20, y: 10)
             }
 
-            Text(title)
-                .font(.headline)
-            Text(subtitle)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.headline)
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(.thinMaterial)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .strokeBorder(.white.opacity(0.08), lineWidth: 1)
+        )
     }
 }
 

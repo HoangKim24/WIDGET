@@ -31,16 +31,18 @@ The GitHub Actions workflow does the following:
 
 ## Required Secret for IPA Export
 
-Add this secret in GitHub repository settings:
-
-- `APPLE_TEAM_ID` - your Apple Developer Team ID used for automatic signing
-
-The workflow passes this value into XcodeGen and archive/export so the generated project uses the same signing team.
-The archive step also passes the team ID directly to `xcodebuild` and allows provisioning device registration updates.
-If this secret is missing, the archive job stops early with a clear error.
+Không cần secret `APPLE_TEAM_ID` cho flow hiện tại, vì archive job được giữ ở chế độ unsigned và IPA được đóng gói thủ công từ archive.
+Nếu sau này muốn quay lại flow signed/automatic signing, lúc đó mới cần thêm Team ID và cấu hình provisioning tương ứng.
 
 ## Notes
 
 - The widget and app share data through App Group `group.com.example.lichtuan`.
 - Lock Screen widget families stay monochrome and use only a small accentable symbol.
 - `systemLarge` and the main app use the full color palette.
+
+## Build And Archive Risks
+
+- Unsigned IPA chỉ là đóng gói từ archive, không phải flow ký code đầy đủ.
+- App Group `group.com.example.lichtuan` must exist for both the app ID and widget extension ID, and the provisioning profiles must include it. If not, signing or archive can fail.
+- `xcodegen generate` depends on the runner environment. If `project.yml` is invalid or the XcodeGen version changes, CI can fail even when the Swift code is fine.
+- `WeekTimelineProvider` falls back to sample data when App Group access is unavailable. That does not break the build, but it means the widget will not read live shared events.
