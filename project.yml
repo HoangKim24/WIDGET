@@ -1,0 +1,83 @@
+name: LichTuanApp
+
+options:
+  bundleIdPrefix: com.example
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: 5.9
+
+targets:
+  LichTuanApp:
+    type: application
+    platform: iOS
+    deploymentTarget: 16.0
+    sources:
+      - path: LichTuanApp
+      - path: Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.lichtuan
+        INFOPLIST_FILE: LichTuanApp/Info.plist
+        CODE_SIGN_ENTITLEMENTS: LichTuanApp/LichTuanApp.entitlements
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: ${APPLE_TEAM_ID}
+    dependencies:
+      - target: LichTuanWidget
+
+  LichTuanWidget:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: 16.0
+    sources:
+      - path: LichTuanWidget
+      - path: Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.lichtuan.widget
+        INFOPLIST_FILE: LichTuanWidget/Info.plist
+        APPLICATION_EXTENSION_API_ONLY: YES
+        CODE_SIGN_ENTITLEMENTS: LichTuanWidget/LichTuanWidget.entitlements
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: ${APPLE_TEAM_ID}
+
+  LichTuanAppTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: 16.0
+    sources:
+      - path: LichTuanAppTests
+      - path: Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.lichtuan.tests
+        GENERATE_INFOPLIST_FILE: YES
+
+  LichTuanAppUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    deploymentTarget: 16.0
+    sources:
+      - path: LichTuanAppUITests
+      - path: Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.lichtuan.uitests
+        GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - target: LichTuanApp
+
+schemes:
+  LichTuanApp:
+    build:
+      targets:
+        LichTuanApp: all
+        LichTuanWidget: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - LichTuanAppTests
+        - LichTuanAppUITests
