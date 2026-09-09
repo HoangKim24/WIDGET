@@ -148,7 +148,7 @@ struct WeekGridView: View {
                 .minimumScaleFactor(0.7)
             Text("\(day.dayNumber)")
                 .font(.headline.weight(day.isToday ? .bold : .semibold))
-                .foregroundStyle(day.isToday ? .accentColor : .primary)
+                .foregroundStyle(day.isToday ? AppColors.accent : Color.primary)
             if let firstEvent {
                 HStack(spacing: 4) {
                     Image(systemName: firstEvent.category.symbolName)
