@@ -92,11 +92,18 @@ jobs:
       - name: Run UI tests
         run: |
           set -o pipefail
+          SIMULATOR_NAME=$(xcrun simctl list devices available | grep -m 1 -E 'iPhone [0-9]+' | sed -E 's/^[[:space:]]*([^()]+) \(.*/\1/' | xargs)
+          if [ -z "$SIMULATOR_NAME" ]; then
+            echo "No available iPhone simulator found."
+            xcrun simctl list devices available
+            exit 1
+          fi
+          echo "Using simulator: $SIMULATOR_NAME"
           xcodebuild \
             -project LichTuanApp.xcodeproj \
             -scheme LichTuanApp \
             -configuration Debug \
-            -destination 'platform=iOS Simulator,name=iPhone 17,OS=latest' \
+            -destination "platform=iOS Simulator,name=$SIMULATOR_NAME,OS=latest" \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             -resultBundlePath TestResults.xcresult \
