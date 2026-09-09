@@ -40,7 +40,7 @@ Apple ID miễn phí không được cấp capability `App Groups`, nên app và
 
 - App chính lưu sự kiện trong `UserDefaults.standard` của riêng nó (`Shared/SharedDataStore.swift`).
 - Sau mỗi thay đổi, app đẩy JSON lên một GitHub Gist bằng token cá nhân (`Shared/GistSyncClient.swift`).
-- Widget tải Gist đó về bằng lời gọi công khai, không cần token, và cache lại trong `Caches` của chính nó (`Shared/EventCache.swift`).
+- Widget tải Gist đó về bằng lời gọi công khai, không cần token, và cache lại trong `Application Support` của chính nó (`Shared/EventCache.swift`).
 
 Cấu hình trước khi build:
 

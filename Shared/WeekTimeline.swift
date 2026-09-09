@@ -137,7 +137,7 @@ enum WeekTimelineBuilder {
 
         let nextEventDate = events
             .filter { $0.startDate > date }
-            .map(\ .startDate)
+            .map(\.startDate)
             .sorted()
             .first
 
@@ -148,24 +148,6 @@ enum WeekTimelineBuilder {
     static func startOfWeek(containing date: Date, calendar: Calendar = .autoupdatingCurrent) -> Date {
         let weekInterval = calendar.dateInterval(of: .weekOfYear, for: date)
         return weekInterval?.start ?? calendar.startOfDay(for: date)
-    }
-
-    static func events(on day: Date, in events: [CalendarEvent], calendar: Calendar = .autoupdatingCurrent) -> [CalendarEvent] {
-        let startOfDay = calendar.startOfDay(for: day)
-        let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) ?? day
-
-        return events
-            .filter { event in
-                event.startDate < endOfDay && event.endDate >= startOfDay
-            }
-            .sorted { $0.startDate < $1.startDate }
-    }
-
-    static func upcomingEvent(from events: [CalendarEvent], referenceDate: Date) -> CalendarEvent? {
-        events
-            .filter { $0.endDate >= referenceDate }
-            .sorted { $0.startDate < $1.startDate }
-            .first
     }
 
     private static func weekdayLabel(for date: Date, calendar: Calendar) -> String {
