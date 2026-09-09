@@ -6,7 +6,7 @@ final class WidgetPreviewHostTests: XCTestCase {
         app.launchArguments = ["UITEST_WIDGET_PREVIEW"]
         app.launch()
 
-        let host = app.otherElements["WidgetPreviewHost"]
+        let host = app.descendants(matching: .any)["WidgetPreviewHost"]
         XCTAssertTrue(host.waitForExistence(timeout: 15))
 
         let screenshot = XCTAttachment(screenshot: app.screenshot())
