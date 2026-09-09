@@ -4,6 +4,7 @@ struct ContentView: View {
     @StateObject private var viewModel = EventListViewModel()
     @State private var editorContext: EditorContext?
     @State private var showAppIconConcepts = false
+    @State private var showSyncSettings = false
 
     var body: some View {
         NavigationStack {
@@ -37,6 +38,30 @@ struct ContentView: View {
                     } label: {
                         Label("Preview App Icon Concepts", systemImage: "paintpalette.fill")
                     }
+                }
+
+                Section("Widget Sync") {
+                    SyncStatusRow(status: viewModel.syncStatus)
+
+                    Button {
+                        showSyncSettings = true
+                    } label: {
+                        Label("Cấu hình GitHub token", systemImage: "key.fill")
+                    }
+
+                    Button {
+                        viewModel.syncToRemote()
+                    } label: {
+                        Label("Đẩy dữ liệu lên widget", systemImage: "arrow.up.circle.fill")
+                    }
+                    .disabled(!viewModel.isRemoteSyncReady)
+
+                    Button {
+                        viewModel.pullFromRemote()
+                    } label: {
+                        Label("Tải dữ liệu từ Gist", systemImage: "arrow.down.circle.fill")
+                    }
+                    .disabled(!RemoteSyncConfig.isConfigured)
                 }
             }
             .navigationTitle("Lich Tuan")
@@ -83,6 +108,11 @@ struct ContentView: View {
             }
             .sheet(isPresented: $showAppIconConcepts) {
                 AppIconConceptsView()
+            }
+            .sheet(isPresented: $showSyncSettings) {
+                RemoteSyncSettingsView {
+                    viewModel.syncToRemote()
+                }
             }
             .onAppear {
                 viewModel.load()
@@ -338,6 +368,71 @@ private struct EmptyEventsCard: View {
         )
         .listRowInsets(EdgeInsets())
         .listRowBackground(Color.clear)
+    }
+}
+
+/// Dòng hiển thị trạng thái đồng bộ gần nhất giữa app và Gist.
+private struct SyncStatusRow: View {
+    let status: SyncStatus
+
+    var body: some View {
+        HStack(spacing: 10) {
+            if case .syncing = status {
+                ProgressView()
+                    .controlSize(.small)
+            } else {
+                Image(systemName: symbolName)
+                    .foregroundStyle(tint)
+            }
+
+            Text(message)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .accessibilityIdentifier("SyncStatusRow")
+    }
+
+    private var symbolName: String {
+        switch status {
+        case .idle:
+            return "clock.arrow.circlepath"
+        case .syncing:
+            return "arrow.triangle.2.circlepath"
+        case .success:
+            return "checkmark.circle.fill"
+        case .failure:
+            return "exclamationmark.triangle.fill"
+        }
+    }
+
+    private var tint: Color {
+        switch status {
+        case .success:
+            return .green
+        case .failure:
+            return .orange
+        default:
+            return .secondary
+        }
+    }
+
+    private var message: String {
+        switch status {
+        case .idle:
+            return RemoteSyncConfig.isConfigured
+                ? "Chưa đồng bộ trong phiên này."
+                : "Chưa cấu hình Gist ID nên widget đang dùng dữ liệu mẫu."
+        case .syncing:
+            return "Đang đồng bộ với Gist..."
+        case .success(let date):
+            let formatter = DateFormatter()
+            formatter.dateStyle = .none
+            formatter.timeStyle = .medium
+            return "Đồng bộ thành công lúc \(formatter.string(from: date))."
+        case .failure(let reason):
+            return "Đồng bộ thất bại: \(reason)"
+        }
     }
 }
 

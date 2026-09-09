@@ -38,26 +38,53 @@ struct WeekEntry: TimelineEntry {
     let upcomingEvent: CalendarEvent?
 }
 
-/// Tạo entry tuần từ dữ liệu cục bộ trong App Group.
+/// Tạo entry tuần từ dữ liệu tải về Gist, có cache cục bộ khi mất mạng.
 struct WeekTimelineProvider: TimelineProvider {
+    private let cache = EventCache.widget
+    private let client = GistSyncClient.shared
+
     func placeholder(in context: Context) -> WeekEntry {
         WeekTimelineBuilder.makeEntry(referenceDate: .now, events: SharedEventSeed.sampleEvents)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (WeekEntry) -> Void) {
-        let events = SharedDataStore.shared.loadEvents()
-        let fallbackEvents = events.isEmpty ? SharedEventSeed.sampleEvents : events
-        completion(WeekTimelineBuilder.makeEntry(referenceDate: .now, events: fallbackEvents))
+        // Snapshot cần trả về nhanh nên chỉ đọc cache, không gọi mạng.
+        let events = displayEvents(from: cache.load())
+        completion(WeekTimelineBuilder.makeEntry(referenceDate: .now, events: events))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<WeekEntry>) -> Void) {
-        let currentDate = Date()
-        let events = SharedDataStore.shared.loadEvents()
-        let timelineEvents = events.isEmpty ? SharedEventSeed.sampleEvents : events
-        let entry = WeekTimelineBuilder.makeEntry(referenceDate: currentDate, events: timelineEvents)
-        let refreshDate = WeekTimelineBuilder.nextRefreshDate(after: currentDate, events: timelineEvents)
+        Task {
+            let events = await loadEvents()
+            let currentDate = Date()
+            let timelineEvents = displayEvents(from: events)
+            let entry = WeekTimelineBuilder.makeEntry(referenceDate: currentDate, events: timelineEvents)
+            let refreshDate = WeekTimelineBuilder.nextRefreshDate(after: currentDate, events: timelineEvents)
 
-        completion(Timeline(entries: [entry], policy: .after(refreshDate)))
+            completion(Timeline(entries: [entry], policy: .after(refreshDate)))
+        }
+    }
+
+    /// Ưu tiên dữ liệu mới từ Gist, thất bại thì quay về cache đã lưu.
+    private func loadEvents() async -> [CalendarEvent] {
+        let cachedEvents = cache.load()
+
+        guard RemoteSyncConfig.isConfigured else {
+            return cachedEvents
+        }
+
+        do {
+            let remoteEvents = try await client.fetchEvents()
+            cache.save(remoteEvents)
+            return remoteEvents
+        } catch {
+            return cachedEvents
+        }
+    }
+
+    /// Khi chưa có dữ liệu thật thì hiển thị dữ liệu mẫu cho widget không bị trống.
+    private func displayEvents(from events: [CalendarEvent]) -> [CalendarEvent] {
+        events.isEmpty ? SharedEventSeed.sampleEvents : events
     }
 }
 

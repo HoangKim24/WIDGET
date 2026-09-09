@@ -1,22 +1,21 @@
 import Foundation
 
-/// Lớp lưu và đọc dữ liệu giữa app chính và widget qua UserDefaults của App Group.
+/// Lớp lưu và đọc dữ liệu sự kiện của app chính.
+///
+/// Trước đây lớp này ghi vào UserDefaults của App Group để widget đọc chung.
+/// Apple ID miễn phí không được cấp capability App Groups, nên bản này lưu
+/// cục bộ trong sandbox của app và việc chia sẻ với widget do `GistSyncClient`
+/// đảm nhiệm thông qua một Gist trên GitHub.
 final class SharedDataStore {
     static let shared = SharedDataStore()
 
-    static let appGroupID = "group.com.example.lichtuan"
-
     private let eventsKey = "calendarEvents"
-    private let encoder = JSONEncoder()
-    private let decoder = JSONDecoder()
+    private let encoder = EventCoding.encoder
+    private let decoder = EventCoding.decoder
+    private let userDefaults: UserDefaults
 
-    private init() {
-        encoder.dateEncodingStrategy = .iso8601
-        decoder.dateDecodingStrategy = .iso8601
-    }
-
-    private var userDefaults: UserDefaults {
-        UserDefaults(suiteName: Self.appGroupID) ?? .standard
+    init(userDefaults: UserDefaults = .standard) {
+        self.userDefaults = userDefaults
     }
 
     /// Đọc toàn bộ sự kiện đã lưu. Nếu không có dữ liệu thì trả về mảng rỗng.
@@ -32,7 +31,7 @@ final class SharedDataStore {
         }
     }
 
-    /// Lưu danh sách sự kiện xuống App Group để app và widget cùng đọc được.
+    /// Lưu danh sách sự kiện xuống bộ nhớ cục bộ của app.
     func save(events: [CalendarEvent]) {
         guard let data = try? encoder.encode(events) else {
             return
@@ -67,7 +66,7 @@ final class SharedDataStore {
         save(events: remainingEvents)
     }
 
-    /// Xóa toàn bộ dữ liệu hiện có trong App Group.
+    /// Xóa toàn bộ dữ liệu hiện có trong bộ nhớ cục bộ của app.
     func clearAllEvents() {
         userDefaults.removeObject(forKey: eventsKey)
     }

@@ -1,6 +1,6 @@
 import Foundation
 
-/// Dữ liệu một sự kiện lịch đơn lẻ, lưu cục bộ trong App Group.
+/// Dữ liệu một sự kiện lịch đơn lẻ, lưu cục bộ và đồng bộ lên Gist.
 struct CalendarEvent: Identifiable, Codable, Equatable {
     let id: UUID
     var title: String

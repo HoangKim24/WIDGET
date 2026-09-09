@@ -1,7 +1,7 @@
 name: LichTuanApp
 
 options:
-  bundleIdPrefix: com.example
+  bundleIdPrefix: com.hoangkim24
   createIntermediateGroups: true
 
 settings:
@@ -18,9 +18,8 @@ targets:
       - path: Shared
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.example.lichtuan
+        PRODUCT_BUNDLE_IDENTIFIER: com.hoangkim24.lichtuan
         INFOPLIST_FILE: LichTuanApp/Info.plist
-        CODE_SIGN_ENTITLEMENTS: LichTuanApp/LichTuanApp.entitlements
     dependencies:
       - target: LichTuanWidget
 
@@ -33,10 +32,9 @@ targets:
       - path: Shared
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.example.lichtuan.widget
+        PRODUCT_BUNDLE_IDENTIFIER: com.hoangkim24.lichtuan.widget
         INFOPLIST_FILE: LichTuanWidget/Info.plist
         APPLICATION_EXTENSION_API_ONLY: YES
-        CODE_SIGN_ENTITLEMENTS: LichTuanWidget/LichTuanWidget.entitlements
 
   LichTuanAppTests:
     type: bundle.unit-test
@@ -47,7 +45,7 @@ targets:
       - path: Shared
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.example.lichtuan.tests
+        PRODUCT_BUNDLE_IDENTIFIER: com.hoangkim24.lichtuan.tests
         GENERATE_INFOPLIST_FILE: YES
 
   LichTuanAppUITests:
@@ -59,7 +57,7 @@ targets:
       - path: Shared
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.example.lichtuan.uitests
+        PRODUCT_BUNDLE_IDENTIFIER: com.hoangkim24.lichtuan.uitests
         GENERATE_INFOPLIST_FILE: YES
     dependencies:
       - target: LichTuanApp
