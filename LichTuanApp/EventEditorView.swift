@@ -29,26 +29,26 @@ struct EventEditorView: View {
                     EditorHeroView(category: selectedCategory)
 
                     VStack(spacing: 14) {
-                        editorCard(title: "General") {
-                            TextField("Event title", text: $title)
+                        editorCard(title: "Thông tin chung") {
+                            TextField("Tên sự kiện", text: $title)
                                 .textInputAutocapitalization(.words)
 
-                            Picker("Category", selection: $selectedCategory) {
+                            Picker("Danh mục", selection: $selectedCategory) {
                                 ForEach(EventCategory.allCases) { category in
                                     Label(category.displayName, systemImage: category.symbolName)
                                         .tag(category)
                                 }
                             }
 
-                            Toggle("All day", isOn: $isAllDay)
+                            Toggle("Cả ngày", isOn: $isAllDay)
                         }
 
-                        editorCard(title: "Timing") {
-                            DatePicker("Start", selection: $startDate)
-                            DatePicker("End", selection: $endDate)
+                        editorCard(title: "Thời gian") {
+                            DatePicker("Bắt đầu", selection: $startDate)
+                            DatePicker("Kết thúc", selection: $endDate)
                         }
 
-                        editorCard(title: "Preview") {
+                        editorCard(title: "Xem trước") {
                             HStack(spacing: 12) {
                                 RoundedRectangle(cornerRadius: 14, style: .continuous)
                                     .fill(AppColors.gradient(for: selectedCategory))
@@ -61,7 +61,7 @@ struct EventEditorView: View {
                                 VStack(alignment: .leading, spacing: 3) {
                                     Text(selectedCategory.displayName)
                                         .font(.headline)
-                                    Text("Color and icon are driven by the shared category palette.")
+                                    Text("Màu sắc và biểu tượng được chọn theo danh mục.")
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                         .fixedSize(horizontal: false, vertical: true)
@@ -74,7 +74,7 @@ struct EventEditorView: View {
                 .padding(.horizontal, 16)
                 .padding(.top, 8)
             }
-            .navigationTitle(existingEvent == nil ? "New Event" : "Edit Event")
+            .navigationTitle(existingEvent == nil ? "Thêm sự kiện" : "Sửa sự kiện")
             .navigationBarTitleDisplayMode(.inline)
             .background(
                 LinearGradient(
@@ -86,13 +86,13 @@ struct EventEditorView: View {
             )
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+                    Button("Hủy") {
                         dismiss()
                     }
                 }
 
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
+                    Button("Lưu") {
                         saveEvent()
                     }
                     .disabled(!canSave)
@@ -159,9 +159,9 @@ private struct EditorHeroView: View {
             }
 
             VStack(alignment: .leading, spacing: 6) {
-                Text("Design your event")
+                Text("Tạo sự kiện của bạn")
                     .font(.title2.bold())
-                Text("Choose a category, set the timing, and the shared palette will keep the widget consistent.")
+                Text("Chọn danh mục và thời gian để lịch và widget luôn đồng bộ.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)

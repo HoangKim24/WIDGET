@@ -10,7 +10,7 @@ struct RemoteSyncSettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Gist") {
+                Section("Gist đồng bộ") {
                     LabeledContent("Gist ID") {
                         Text(RemoteSyncConfig.isConfigured ? RemoteSyncConfig.gistID : "Chưa cấu hình")
                             .foregroundStyle(RemoteSyncConfig.isConfigured ? .primary : .secondary)
@@ -24,8 +24,8 @@ struct RemoteSyncSettingsView: View {
                     }
                 }
 
-                Section("GitHub token") {
-                    SecureField("ghp_...", text: $token)
+                Section("Mã token GitHub") {
+                    SecureField("Nhập mã token", text: $token)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                         .accessibilityIdentifier("GistTokenField")

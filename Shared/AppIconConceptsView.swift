@@ -6,7 +6,7 @@ struct AppIconConceptsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("App Icon Concepts")
+                    Text("Mẫu biểu tượng ứng dụng")
                         .font(.system(.largeTitle, design: .rounded, weight: .bold))
 
                     Text("Ba hướng phối màu/gradient khác nhau để chọn trước khi xuất file icon thật.")
@@ -16,21 +16,21 @@ struct AppIconConceptsView: View {
 
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
                     AppIconCard(
-                        title: "Dawn Calendar",
+                        title: "Lịch bình minh",
                         subtitle: "Primary + accent, sáng và rõ",
                         background: AppColors.iconGradient(start: AppColors.primary, end: AppColors.accent),
                         foregroundSymbol: "calendar.circle.fill"
                     )
 
                     AppIconCard(
-                        title: "Aurora Week",
+                        title: "Tuần cực quang",
                         subtitle: "Lớp gradient xanh/tím hiện đại",
                         background: AppColors.iconGradient(start: Color("CategoryStudy"), end: Color("CategoryWork")),
                         foregroundSymbol: "rectangle.grid.2x2.fill"
                     )
 
                     AppIconCard(
-                        title: "Warm Schedule",
+                        title: "Lịch ấm áp",
                         subtitle: "Ấm hơn, gần gũi hơn",
                         background: AppColors.iconGradient(start: Color("CategoryFamily"), end: Color("CategoryPersonal")),
                         foregroundSymbol: "calendar.badge.clock"

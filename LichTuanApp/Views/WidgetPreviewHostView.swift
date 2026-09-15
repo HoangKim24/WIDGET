@@ -10,33 +10,33 @@ struct WidgetPreviewHostView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                Text("Widget Preview Host")
+                Text("Xem trước widget")
                     .font(.title.bold())
 
-                Text("Màn hình này chỉ dùng cho UI Test và chụp ảnh widget.")
+                Text("Màn hình xem trước các kích thước widget.")
                     .foregroundStyle(.secondary)
 
-                previewSection(title: "Accessory Circular") {
+                previewSection(title: "Tròn trên màn hình khóa") {
                     LockScreenSummaryView(entry: sampleEntry, style: .circular)
                         .frame(width: 76, height: 76)
                 }
 
-                previewSection(title: "Accessory Rectangular") {
+                previewSection(title: "Chữ nhật trên màn hình khóa") {
                     LockScreenSummaryView(entry: sampleEntry, style: .rectangular)
                         .frame(width: 172, height: 76)
                 }
 
-                previewSection(title: "Accessory Inline") {
+                previewSection(title: "Dòng trên màn hình khóa") {
                     LockScreenSummaryView(entry: sampleEntry, style: .inline)
                         .frame(width: 340, height: 44)
                 }
 
-                previewSection(title: "System Large") {
+                previewSection(title: "Widget lớn") {
                     WeekGridView(entry: sampleEntry)
                         .frame(width: 364, height: 382)
                 }
 
-                previewSection(title: "Event Palette") {
+                previewSection(title: "Màu danh mục") {
                     EventPalettePreviewView()
                         .frame(maxWidth: .infinity)
                 }

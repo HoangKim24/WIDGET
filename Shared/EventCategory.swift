@@ -13,12 +13,12 @@ enum EventCategory: String, Codable, CaseIterable, Identifiable {
 
     var displayName: String {
         switch self {
-        case .work: return "Work"
-        case .personal: return "Personal"
-        case .health: return "Health"
-        case .study: return "Study"
-        case .family: return "Family"
-        case .other: return "Other"
+        case .work: return "Công việc"
+        case .personal: return "Cá nhân"
+        case .health: return "Sức khỏe"
+        case .study: return "Học tập"
+        case .family: return "Gia đình"
+        case .other: return "Khác"
         }
     }
 

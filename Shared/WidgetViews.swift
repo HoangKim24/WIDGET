@@ -44,7 +44,7 @@ struct LockScreenSummaryView: View {
                 .widgetAccentable()
             Text(entry.days.first(where: { $0.isToday })?.events.count.description ?? "0")
                 .font(.headline.weight(.semibold))
-            Text("Soon")
+                Text("Sắp tới")
                 .font(.caption2)
                 .minimumScaleFactor(0.8)
         }
@@ -96,7 +96,7 @@ struct WeekGridView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("This Week")
+                Text("Tuần này")
                     .font(.headline.weight(.semibold))
                 Spacer()
                 Text(weekRangeText)
@@ -112,7 +112,7 @@ struct WeekGridView: View {
 
             if let upcomingEvent = entry.upcomingEvent {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Next up")
+                    Text("Tiếp theo")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
                     Text(upcomingEvent.title)
@@ -161,7 +161,7 @@ struct WeekGridView: View {
                         .minimumScaleFactor(0.7)
                 }
             } else {
-                Text("Free")
+                Text("Trống")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -169,13 +169,13 @@ struct WeekGridView: View {
             }
 
             if day.events.count > 1 {
-                Text("+\(day.events.count - 1) more")
+                Text("+\(day.events.count - 1) nữa")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
             } else if !day.events.isEmpty {
-                Text("1 event")
+                Text("1 sự kiện")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
