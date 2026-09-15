@@ -23,7 +23,7 @@
         <key>NSExtensionPointIdentifier</key>
         <string>com.apple.widgetkit-extension</string>
         <key>NSExtensionPrincipalClass</key>
-        <string>$(PRODUCT_MODULE_NAME).LichTuanWidgetBundle</string>
+        <string>$(PRODUCT_MODULE_NAME).LichTuanWidget</string>
     </dict>
 </dict>
 </plist>

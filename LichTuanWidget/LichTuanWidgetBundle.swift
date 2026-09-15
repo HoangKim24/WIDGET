@@ -1,6 +1,7 @@
 import SwiftUI
 import WidgetKit
 
+@main
 struct LichTuanWidget: Widget {
     let kind: String = "LichTuanWidget"
 
@@ -11,12 +12,5 @@ struct LichTuanWidget: Widget {
         .configurationDisplayName("Lich Tuan")
         .description("Lich tuan va tom tat su kien sap toi.")
         .supportedFamilies([.accessoryCircular, .accessoryRectangular, .accessoryInline, .systemLarge])
-    }
-}
-
-@main
-struct LichTuanWidgetBundle: WidgetBundle {
-    var body: some Widget {
-        LichTuanWidget()
     }
 }

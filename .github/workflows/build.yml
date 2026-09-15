@@ -1,6 +1,7 @@
 name: Build and Screenshot
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -89,14 +90,47 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-xcode-
 
-      - name: Run UI tests
+      - name: Validate widget extension bundle
         run: |
           set -o pipefail
           xcodebuild \
             -project LichTuanApp.xcodeproj \
             -scheme LichTuanApp \
             -configuration Debug \
-            -destination 'platform=iOS Simulator,name=iPhone 17,OS=latest' \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            -derivedDataPath BuildForTesting \
+            build-for-testing
+          APPEX_PATH="BuildForTesting/Build/Products/Debug-iphonesimulator/LichTuanWidget.appex"
+          if [ ! -d "$APPEX_PATH" ]; then
+            echo "Widget extension bundle was not produced: $APPEX_PATH"
+            find BuildForTesting -name '*.appex' -print
+            exit 1
+          fi
+          echo "Widget extension Info.plist:"
+          /usr/libexec/PlistBuddy -c 'Print :NSExtension' "$APPEX_PATH/Info.plist"
+          if find "$APPEX_PATH" -type f \( -name '*.storyboardc' -o -name '*.nib' -o -name '*.xib' \) -print -quit | grep -q .; then
+            echo "Legacy storyboard/XIB resource found in widget extension."
+            find "$APPEX_PATH" -type f \( -name '*.storyboardc' -o -name '*.nib' -o -name '*.xib' \) -print
+            exit 1
+          fi
+
+      - name: Run UI tests
+        run: |
+          set -o pipefail
+          SIMULATOR_UDID="$(xcrun simctl list devices available | awk -F '[()]' '/iPhone/ {print $2; exit}')"
+          if [ -z "$SIMULATOR_UDID" ]; then
+            echo "No available iPhone Simulator was found on this runner."
+            xcrun simctl list devices available
+            exit 1
+          fi
+          echo "Using iPhone Simulator: $SIMULATOR_UDID"
+          xcodebuild \
+            -project LichTuanApp.xcodeproj \
+            -scheme LichTuanApp \
+            -configuration Debug \
+            -destination "platform=iOS Simulator,id=$SIMULATOR_UDID" \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             -resultBundlePath TestResults.xcresult \

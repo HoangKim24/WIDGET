@@ -19,6 +19,21 @@ xcodegen generate
 
 That generates `LichTuanApp.xcodeproj` from `project.yml`.
 
+## Xem Và Sửa UI
+
+Đây là dự án iOS SwiftUI, vì vậy cần **macOS + Xcode** để chạy app và xem giao diện trực tiếp.
+VS Code trên Windows chỉ phù hợp để sửa mã nguồn; không thể mở `#Preview`, iOS Simulator hoặc build WidgetKit tại chỗ.
+
+### Cách xem UI trên Mac
+
+1. Cài Xcode và XcodeGen (`brew install xcodegen`), sau đó chạy `xcodegen generate` trong thư mục repo.
+2. Mở `LichTuanApp.xcodeproj` bằng Xcode.
+3. Chọn scheme `LichTuanApp`, chọn một iPhone Simulator, rồi bấm **Run**.
+4. Mở các file SwiftUI như `LichTuanApp/RootView.swift`, `LichTuanApp/EventEditorView.swift` hoặc `LichTuanApp/Views/WidgetPreviewHostView.swift` để dùng canvas **Preview**.
+5. Muốn xem màn hình widget tập trung, chọn scheme `LichTuanApp`, thêm launch argument `UITEST_WIDGET_PREVIEW` trong scheme **Edit Scheme > Run > Arguments**, rồi chạy app. Màn hình `Widget Preview Host` sẽ hiển thị các family widget và bảng màu.
+
+Nếu chỉ có Windows, hãy push code lên GitHub để workflow macOS build và chạy UI test. Ảnh UI được lấy từ artifact `widget-screenshots` trong phần **Actions**; muốn chỉnh tiếp thì sửa SwiftUI trên Windows, push lại, rồi tải artifact mới.
+
 ## CI Flow
 
 The GitHub Actions workflow does the following:
@@ -61,5 +76,6 @@ Token không nằm trong mã nguồn, chỉ lưu trên máy chạy app. Nếu `g
 - Unsigned IPA chỉ là đóng gói từ archive, không phải flow ký code đầy đủ.
 - Không còn entitlement nào, nên ký bằng Apple ID miễn phí không vướng capability. Đổi lại, dữ liệu widget phụ thuộc vào mạng và Gist.
 - `xcodegen generate` depends on the runner environment. If `project.yml` is invalid or the XcodeGen version changes, CI can fail even when the Swift code is fine.
+- UI test không nên khóa vào một tên simulator cụ thể vì danh sách device thay đổi theo phiên bản Xcode; workflow tự chọn iPhone Simulator đầu tiên đang available.
 - `WeekTimelineProvider` falls back to cache rồi tới dữ liệu mẫu khi không gọi được Gist. Widget vẫn hiển thị nhưng có thể không phải dữ liệu mới nhất.
 - Widget chỉ làm mới theo lịch của WidgetKit, nên sự kiện vừa thêm có thể mất vài phút mới xuất hiện.
