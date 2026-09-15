@@ -110,6 +110,14 @@ jobs:
           fi
           echo "Widget extension Info.plist:"
           /usr/libexec/PlistBuddy -c 'Print :NSExtension' "$APPEX_PATH/Info.plist"
+          if /usr/libexec/PlistBuddy -c 'Print :NSExtension:NSExtensionPrincipalClass' "$APPEX_PATH/Info.plist" >/dev/null 2>&1; then
+            echo "NSExtensionPrincipalClass must not be present in a WidgetKit extension."
+            exit 1
+          fi
+          if /usr/libexec/PlistBuddy -c 'Print :NSExtension:NSExtensionMainStoryboard' "$APPEX_PATH/Info.plist" >/dev/null 2>&1; then
+            echo "NSExtensionMainStoryboard must not be present in a WidgetKit extension."
+            exit 1
+          fi
           if find "$APPEX_PATH" -type f \( -name '*.storyboardc' -o -name '*.nib' -o -name '*.xib' \) -print -quit | grep -q .; then
             echo "Legacy storyboard/XIB resource found in widget extension."
             find "$APPEX_PATH" -type f \( -name '*.storyboardc' -o -name '*.nib' -o -name '*.xib' \) -print
