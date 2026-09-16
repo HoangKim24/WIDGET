@@ -1,211 +1,9 @@
 import SwiftUI
 
-// MARK: - Bảng Lịch Tuần 7 Ngày (Thứ Hai đến Chủ Nhật)
-struct WeeklyScheduleView: View {
+// MARK: - Daily Agenda and Week Schedule (Chuẩn 100% Theo Mẫu Tham Khảo)
+struct DailyAgendaAndWeekScheduleView: View {
     let events: [CalendarEvent]
-    let accentColor: Color
-    var isGlassCard: Bool = false
-
-    @State private var weekOffset: Int = 0
-    private let calendar = Calendar.current
-
-    private var currentWeekDays: [Date] {
-        let today = calendar.startOfDay(for: Date())
-        let weekday = calendar.component(.weekday, from: today)
-        let daysFromMonday = (weekday + 5) % 7
-        let baseMonday = calendar.date(byAdding: .day, value: -daysFromMonday, to: today) ?? today
-        let targetMonday = calendar.date(byAdding: .day, value: weekOffset * 7, to: baseMonday) ?? baseMonday
-        return (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: targetMonday) }
-    }
-
-    private var weekRangeTitle: String {
-        guard let first = currentWeekDays.first, let last = currentWeekDays.last else { return "Tuần Này" }
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "vi_VN")
-        formatter.dateFormat = "d/M"
-        if weekOffset == 0 {
-            return "Tuần Này (\(formatter.string(from: first)) - \(formatter.string(from: last)))"
-        } else if weekOffset == 1 {
-            return "Tuần Sau (\(formatter.string(from: first)) - \(formatter.string(from: last)))"
-        } else if weekOffset == -1 {
-            return "Tuần Trước (\(formatter.string(from: first)) - \(formatter.string(from: last)))"
-        } else {
-            return "\(formatter.string(from: first)) - \(formatter.string(from: last))"
-        }
-    }
-
-    var body: some View {
-        VStack(spacing: 8) {
-            // Thanh tiêu đề điều hướng tuần
-            HStack {
-                Button {
-                    withAnimation(.spring(response: 0.3)) { weekOffset -= 1 }
-                } label: {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundStyle(.white.opacity(0.8))
-                        .padding(6)
-                        .background(Circle().fill(Color.black.opacity(0.3)))
-                }
-
-                Spacer()
-
-                HStack(spacing: 5) {
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 11))
-                        .foregroundStyle(accentColor)
-                    Text(weekRangeTitle)
-                        .font(.system(size: 12, weight: .bold, design: .rounded))
-                        .foregroundStyle(.white)
-                }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 4)
-                .background(
-                    Capsule()
-                        .fill(Color.black.opacity(0.35))
-                )
-
-                Spacer()
-
-                Button {
-                    withAnimation(.spring(response: 0.3)) { weekOffset += 1 }
-                } label: {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundStyle(.white.opacity(0.8))
-                        .padding(6)
-                        .background(Circle().fill(Color.black.opacity(0.3)))
-                }
-            }
-            .padding(.horizontal, 4)
-
-            // Danh sách 7 dòng cho 7 ngày trong tuần
-            VStack(spacing: 5) {
-                ForEach(currentWeekDays, id: \.self) { day in
-                    let isToday = calendar.isDateInToday(day)
-                    let dayEvents = events.filter { calendar.isDate($0.startDate, inSameDayAs: day) }
-                    let weekdayName = vietnameseShortWeekday(for: day)
-                    let dayNumber = calendar.component(.day, from: day)
-
-                    HStack(spacing: 8) {
-                        // Khối Thứ & Ngày
-                        VStack(spacing: 1) {
-                            Text(weekdayName)
-                                .font(.system(size: 9, weight: .extrabold))
-                                .textCase(.uppercase)
-                            Text("\(dayNumber)")
-                                .font(.system(size: 12, weight: .bold, design: .rounded))
-                        }
-                        .frame(width: 32, height: 32)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(isToday ? accentColor : Color.white.opacity(0.12))
-                        )
-                        .foregroundStyle(isToday ? Color.black : Color.white)
-
-                        // Danh sách các khung giờ và công việc cụ thể trong ngày (VD: 07:00 - 10:00 Đi làm)
-                        if !dayEvents.isEmpty {
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 6) {
-                                    ForEach(dayEvents) { event in
-                                        HStack(spacing: 4) {
-                                            Text(formatTimeRange(event))
-                                                .font(.system(size: 8, weight: .bold))
-                                                .foregroundStyle(isToday ? Color.black : accentColor)
-                                                .padding(.horizontal, 4)
-                                                .padding(.vertical, 1.5)
-                                                .background(isToday ? accentColor : Color.white.opacity(0.12))
-                                                .clipShape(RoundedRectangle(cornerRadius: 4))
-
-                                            Text(event.title)
-                                                .font(.system(size: 11, weight: .semibold))
-                                                .foregroundStyle(.white)
-                                                .lineLimit(1)
-                                        }
-                                        .padding(.horizontal, 6)
-                                        .padding(.vertical, 3)
-                                        .background(Color.white.opacity(0.08))
-                                        .clipShape(RoundedRectangle(cornerRadius: 6))
-                                    }
-                                }
-                            }
-                        } else {
-                            Text(isToday ? "Hôm nay không có lịch" : "—")
-                                .font(.system(size: 11, weight: .regular))
-                                .foregroundStyle(.white.opacity(0.35))
-                        }
-
-                        Spacer()
-
-                        // Tag danh mục hoặc trạng thái
-                        if isToday {
-                            Text("Hôm nay")
-                                .font(.system(size: 9, weight: .bold))
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(Capsule().fill(accentColor))
-                                .foregroundStyle(Color.black)
-                        } else if let cat = dayEvents.first?.category {
-                            Text(cat.displayName)
-                                .font(.system(size: 8, weight: .medium))
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(Capsule().fill(Color.white.opacity(0.1)))
-                                .foregroundStyle(.white.opacity(0.7))
-                        }
-                    }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(isToday ? accentColor.opacity(0.18) : Color.white.opacity(0.05))
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(isToday ? accentColor.opacity(0.7) : Color.clear, lineWidth: 1)
-                    )
-                }
-            }
-        }
-        .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(isGlassCard ? Material.ultraThinMaterial : Material.thinMaterial)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                )
-                .shadow(color: .black.opacity(0.35), radius: 14, y: 6)
-        )
-    }
-
-    private func vietnameseShortWeekday(for date: Date) -> String {
-        let weekday = calendar.component(.weekday, from: date)
-        switch weekday {
-        case 1: return "CN"
-        case 2: return "T2"
-        case 3: return "T3"
-        case 4: return "T4"
-        case 5: return "T5"
-        case 6: return "T6"
-        case 7: return "T7"
-        default: return ""
-        }
-    }
-
-    private func formatTimeRange(_ event: CalendarEvent) -> String {
-        if event.isAllDay { return "Cả ngày" }
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "vi_VN")
-        formatter.dateFormat = "HH:mm"
-        return "\(formatter.string(from: event.startDate)) - \(formatter.string(from: event.endDate))"
-    }
-}
-
-// MARK: - Lưới 7 Cột Dọc Tối Giản
-struct WeeklyColumnsView: View {
-    let events: [CalendarEvent]
-    let accentColor: Color
+    var reminders: [String] = ["Trái cây", "Bơ sữa", "Uống đủ nước"]
 
     private let calendar = Calendar.current
 
@@ -217,70 +15,216 @@ struct WeeklyColumnsView: View {
         return (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: monday) }
     }
 
+    private var todayEvents: [CalendarEvent] {
+        events.filter { calendar.isDateInToday($0.startDate) }
+    }
+
     var body: some View {
-        HStack(spacing: 5) {
+        VStack(alignment: .leading, spacing: 16) {
+            // MARK: - PHẦN 1: BẢNG TUẦN 7 CỘT (Mon - Sun / T2 - CN)
+            weekMatrixCard
+
+            // MARK: - PHẦN 2: LỊCH TRÌNH HÔM NAY (Today)
+            todayAgendaSection
+
+            // MARK: - PHẦN 3: GHI CHÚ NHẮC VIỆC (Reminders)
+            remindersSection
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // MARK: - Component 1: Bảng 7 Cột Tuần
+    private var weekMatrixCard: some View {
+        HStack(alignment: .top, spacing: 4) {
             ForEach(currentWeekDays, id: \.self) { day in
                 let isToday = calendar.isDateInToday(day)
-                let dayNumber = calendar.component(.day, from: day)
-                let weekdayName = vietnameseShortWeekday(for: day)
+                let dayNum = calendar.component(.day, from: day)
+                let dayName = vietnameseShortDay(for: day)
                 let dayEvents = events.filter { calendar.isDate($0.startDate, inSameDayAs: day) }
 
-                VStack(spacing: 6) {
-                    Text(weekdayName)
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundStyle(isToday ? accentColor : .white.opacity(0.6))
-
-                    Text("\(dayNumber)")
-                        .font(.system(size: 12, weight: .extrabold, design: .rounded))
-                        .frame(width: 26, height: 26)
-                        .background(Circle().fill(isToday ? accentColor : Color.white.opacity(0.12)))
-                        .foregroundStyle(isToday ? Color.black : Color.white)
-
-                    if let first = dayEvents.first {
-                        Text(first.title)
-                            .font(.system(size: 8, weight: .medium))
-                            .foregroundStyle(.white.opacity(0.9))
-                            .lineLimit(3)
-                            .multilineTextAlignment(.center)
-                    } else {
-                        Spacer().frame(height: 20)
+                VStack(spacing: 3) {
+                    // Header của cột (Thứ + Ngày)
+                    VStack(spacing: 1) {
+                        Text(dayName)
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(isToday ? Color(red: 0.18, green: 0.58, blue: 1.0) : .white.opacity(0.75))
+                        Text("\(dayNum)")
+                            .font(.system(size: 11, weight: .heavy, design: .rounded))
+                            .foregroundStyle(.white)
                     }
+                    .padding(.bottom, 2)
+                    .frame(maxWidth: .infinity)
+                    .overlay(
+                        Rectangle()
+                            .fill(Color.white.opacity(0.12))
+                            .frame(height: 1),
+                        alignment: .bottom
+                    )
+
+                    // Các khối màu sự kiện trong cột
+                    VStack(spacing: 2) {
+                        if !dayEvents.isEmpty {
+                            ForEach(dayEvents.prefix(3)) { event in
+                                Text(miniBlockText(for: event))
+                                    .font(.system(size: 7, weight: .bold))
+                                    .foregroundStyle(isLightColor(event.category) ? Color.black : Color.white)
+                                    .lineLimit(2)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal, 2)
+                                    .padding(.vertical, 2)
+                                    .frame(maxWidth: .infinity)
+                                    .background(eventColor(for: event.category))
+                                    .clipShape(RoundedRectangle(cornerRadius: 3))
+                            }
+                        } else {
+                            Spacer().frame(height: 38)
+                        }
+                    }
+                    .frame(minHeight: 48)
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 8)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(isToday ? accentColor.opacity(0.18) : Color.white.opacity(0.06))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(isToday ? accentColor : Color.clear, lineWidth: 1)
-                )
             }
         }
-        .padding(12)
+        .padding(8)
         .background(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(Material.thinMaterial)
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color(red: 0.11, green: 0.12, blue: 0.15).opacity(0.85))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
                         .stroke(Color.white.opacity(0.18), lineWidth: 1)
                 )
-                .shadow(color: .black.opacity(0.3), radius: 12, y: 6)
+                .shadow(color: .black.opacity(0.4), radius: 10, y: 5)
         )
     }
 
-    private func vietnameseShortWeekday(for date: Date) -> String {
+    // MARK: - Component 2: Today (Lịch Trình Hôm Nay Với Khung Giờ Cụ Thể)
+    private var todayAgendaSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Today")
+                .font(.system(size: 20, weight: .heavy, design: .rounded))
+                .foregroundStyle(.white)
+
+            VStack(alignment: .leading, spacing: 6) {
+                if !todayEvents.isEmpty {
+                    ForEach(todayEvents) { event in
+                        HStack(spacing: 16) {
+                            Text(formatTimeRange(event))
+                                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                .foregroundStyle(.white)
+                                .frame(width: 95, alignment: .leading)
+
+                            Text(event.title)
+                                .font(.system(size: 15, weight: .bold))
+                                .foregroundStyle(eventColor(for: event.category))
+                                .lineLimit(1)
+                        }
+                    }
+                } else {
+                    // Dữ liệu mẫu đẹp mắt như screenshot nếu hôm nay chưa có sự kiện
+                    HStack(spacing: 16) {
+                        Text("05:30–10:00")
+                            .font(.system(size: 14, weight: .bold, design: .monospaced))
+                            .foregroundStyle(.white)
+                            .frame(width: 95, alignment: .leading)
+                        Text("Wake up and gym")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(Color(red: 0.18, green: 0.58, blue: 1.0))
+                    }
+
+                    HStack(spacing: 16) {
+                        Text("12:00–13:00")
+                            .font(.system(size: 14, weight: .bold, design: .monospaced))
+                            .foregroundStyle(.white)
+                            .frame(width: 95, alignment: .leading)
+                        Text("Lunch with Jo")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(Color(red: 0.28, green: 0.79, blue: 0.89))
+                    }
+
+                    HStack(spacing: 16) {
+                        Text("13:30–14:00")
+                            .font(.system(size: 14, weight: .bold, design: .monospaced))
+                            .foregroundStyle(.white)
+                            .frame(width: 95, alignment: .leading)
+                        Text("Meetings")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(Color(red: 0.98, green: 0.79, blue: 0.14))
+                    }
+
+                    HStack(spacing: 16) {
+                        Text("16:30–17:00")
+                            .font(.system(size: 14, weight: .bold, design: .monospaced))
+                            .foregroundStyle(.white)
+                            .frame(width: 95, alignment: .leading)
+                        Text("Reviewing KPIs")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(Color(red: 0.92, green: 0.30, blue: 0.29))
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Component 3: Reminders (Ghi Chú Nhắc Việc)
+    private var remindersSection: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Reminders")
+                .font(.system(size: 17, weight: .heavy, design: .rounded))
+                .foregroundStyle(Color(red: 0.95, green: 0.61, blue: 0.07)) // Màu cam giống ảnh
+
+            VStack(alignment: .leading, spacing: 2) {
+                ForEach(reminders, id: \.self) { item in
+                    Text(item)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(.white)
+                }
+            }
+        }
+    }
+
+    // Helpers
+    private func vietnameseShortDay(for date: Date) -> String {
         let weekday = calendar.component(.weekday, from: date)
         switch weekday {
-        case 1: return "CN"
-        case 2: return "T2"
-        case 3: return "T3"
-        case 4: return "T4"
-        case 5: return "T5"
-        case 6: return "T6"
-        case 7: return "T7"
+        case 1: return "Sun"
+        case 2: return "Mon"
+        case 3: return "Tue"
+        case 4: return "Wed"
+        case 5: return "Thu"
+        case 6: return "Fri"
+        case 7: return "Sat"
         default: return ""
         }
+    }
+
+    private func formatTimeRange(_ event: CalendarEvent) -> String {
+        if event.isAllDay { return "All day" }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        return "\(formatter.string(from: event.startDate))–\(formatter.string(from: event.endDate))"
+    }
+
+    private func miniBlockText(for event: CalendarEvent) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        if event.isAllDay {
+            return "All day\n\(event.title)"
+        }
+        return "\(formatter.string(from: event.startDate))\n\(event.title)"
+    }
+
+    private func eventColor(for category: EventCategory) -> Color {
+        switch category {
+        case .work: return Color(red: 0.92, green: 0.30, blue: 0.29)     // Đỏ san hô
+        case .personal: return Color(red: 0.18, green: 0.58, blue: 1.0)  // Xanh dương
+        case .health: return Color(red: 0.28, green: 0.79, blue: 0.89)    // Xanh cyan
+        case .study: return Color(red: 0.98, green: 0.79, blue: 0.14)     // Vàng
+        case .family: return Color(red: 0.91, green: 0.26, blue: 0.58)    // Hồng
+        case .other: return Color(red: 0.42, green: 0.36, blue: 0.91)     // Tím
+        }
+    }
+
+    private func isLightColor(_ category: EventCategory) -> Bool {
+        return category == .study || category == .health
     }
 }

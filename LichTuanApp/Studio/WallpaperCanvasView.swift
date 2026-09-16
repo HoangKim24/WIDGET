@@ -38,28 +38,8 @@ struct WallpaperCanvasView: View {
                     Spacer()
                         .frame(height: max(20, h * config.position.yRatio + config.fineTuneYOffset))
 
-                    Group {
-                        switch config.layoutType {
-                        case .rows:
-                            WeeklyScheduleView(
-                                events: events,
-                                accentColor: config.accentColor.color,
-                                isGlassCard: false
-                            )
-                        case .columns:
-                            WeeklyColumnsView(
-                                events: events,
-                                accentColor: config.accentColor.color
-                            )
-                        case .frostedCard:
-                            WeeklyScheduleView(
-                                events: events,
-                                accentColor: config.accentColor.color,
-                                isGlassCard: true
-                            )
-                        }
-                    }
-                    .padding(.horizontal, 16)
+                    DailyAgendaAndWeekScheduleView(events: events)
+                        .padding(.horizontal, 18)
 
                     Spacer()
                 }
