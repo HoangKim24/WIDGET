@@ -130,6 +130,7 @@ struct LockScreenStudioView: View {
             let availableHeight = proxy.size.height
             let targetHeight = min(availableHeight, 460)
             let targetWidth = targetHeight * (393.0 / 852.0)
+            let scaleRatio = targetHeight / 852.0
 
             ZStack {
                 // Viền giả lập điện thoại iPhone 15
@@ -144,6 +145,8 @@ struct LockScreenStudioView: View {
                     customImage: customLoadedImage,
                     showMockOverlay: showMockOverlay
                 )
+                .frame(width: 393, height: 852)
+                .scaleEffect(scaleRatio)
                 .frame(width: targetWidth, height: targetHeight)
                 .clipShape(RoundedRectangle(cornerRadius: 34, style: .continuous))
                 .overlay(

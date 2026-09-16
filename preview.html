@@ -210,41 +210,47 @@
 
     /* SECTION 1: 7-DAY WEEK MATRIX TABLE (Mon - Sun) */
     .week-matrix-card {
-      background: rgba(28, 30, 38, 0.8);
+      background: rgba(28, 30, 38, 0.82);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
       border: 1px solid rgba(255, 255, 255, 0.18);
       border-radius: 14px;
       padding: 8px 6px 10px;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      width: 100%;
+      overflow: hidden;
     }
 
     .week-matrix-grid {
       display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 4px;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 3px;
+      width: 100%;
     }
 
     .matrix-col {
+      min-width: 0;
+      width: 100%;
+      overflow: hidden;
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 3px;
     }
 
     .col-header {
       text-align: center;
-      padding-bottom: 4px;
+      padding-bottom: 3px;
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     .col-day-title {
-      font-size: 10px;
+      font-size: 9px;
       font-weight: 700;
       color: rgba(255, 255, 255, 0.75);
     }
 
     .col-day-number {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 800;
       color: #ffffff;
     }
@@ -258,19 +264,43 @@
       flex-direction: column;
       gap: 3px;
       min-height: 52px;
+      width: 100%;
     }
 
     .mini-event-block {
       border-radius: 4px;
-      padding: 3px 2px;
-      font-size: 7.5px;
-      font-weight: 700;
-      line-height: 1.15;
+      padding: 2.5px 1.5px;
+      line-height: 1.1;
       color: #ffffff;
       overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
       text-align: center;
+      width: 100%;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .mini-time {
+      font-size: 6px;
+      font-weight: 800;
+      opacity: 0.95;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      width: 100%;
+      display: block;
+    }
+
+    .mini-title {
+      font-size: 6.5px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      width: 100%;
+      display: block;
     }
 
     /* Block colors from reference screenshot */
@@ -468,7 +498,7 @@
 
   <div class="header-banner">
     <h1>Daily Agenda and Week Schedule</h1>
-    <p>💡 Giao diện chuẩn xác 100% theo mẫu tham khảo bạn vừa gửi!</p>
+    <p>💡 Bảng lịch 7 ngày (Thứ 2 đến Chủ nhật) & Lịch trình hôm nay • <b>Nhấn F5 hoặc Ctrl+R nếu bạn chưa thấy cập nhật mới!</b></p>
   </div>
 
   <div class="phone-container">
@@ -523,8 +553,14 @@
                 <div class="col-day-number">2</div>
               </div>
               <div class="col-blocks-container">
-                <div class="mini-event-block bg-pink">08:00 - 10:00 Do exe</div>
-                <div class="mini-event-block bg-cyan">10:00 - 10:20 Relax</div>
+                <div class="mini-event-block bg-pink">
+                  <span class="mini-time">08:00–10:00</span>
+                  <span class="mini-title">Do exe</span>
+                </div>
+                <div class="mini-event-block bg-cyan">
+                  <span class="mini-time">10:00–10:20</span>
+                  <span class="mini-title">Relax</span>
+                </div>
               </div>
             </div>
 
@@ -535,10 +571,22 @@
                 <div class="col-day-number">3</div>
               </div>
               <div class="col-blocks-container">
-                <div class="mini-event-block bg-blue">05:30 - 10:00 Wake up and gym</div>
-                <div class="mini-event-block bg-cyan">12:00 - 13:00 Lunch with Jo</div>
-                <div class="mini-event-block bg-yellow">13:30 - 14:00 Meetings</div>
-                <div class="mini-event-block bg-red">16:30 - 17:00 Reviewing KPIs</div>
+                <div class="mini-event-block bg-blue">
+                  <span class="mini-time">05:30–10:00</span>
+                  <span class="mini-title">Gym</span>
+                </div>
+                <div class="mini-event-block bg-cyan">
+                  <span class="mini-time">12:00–13:00</span>
+                  <span class="mini-title">Lunch</span>
+                </div>
+                <div class="mini-event-block bg-yellow">
+                  <span class="mini-time">13:30–14:00</span>
+                  <span class="mini-title">Meetings</span>
+                </div>
+                <div class="mini-event-block bg-red">
+                  <span class="mini-time">16:30–17:00</span>
+                  <span class="mini-title">KPIs</span>
+                </div>
               </div>
             </div>
 
@@ -549,7 +597,10 @@
                 <div class="col-day-number">4</div>
               </div>
               <div class="col-blocks-container">
-                <div class="mini-event-block bg-red">10:30 - 17:00 Reviewing KPIs</div>
+                <div class="mini-event-block bg-red">
+                  <span class="mini-time">10:30–17:00</span>
+                  <span class="mini-title">Review KPIs</span>
+                </div>
               </div>
             </div>
 
@@ -560,8 +611,14 @@
                 <div class="col-day-number">5</div>
               </div>
               <div class="col-blocks-container">
-                <div class="mini-event-block bg-yellow">13:30 - 14:00 Meetings</div>
-                <div class="mini-event-block bg-red">16:30 - 17:00 Reviewing KPIs</div>
+                <div class="mini-event-block bg-yellow">
+                  <span class="mini-time">13:30–14:00</span>
+                  <span class="mini-title">Meetings</span>
+                </div>
+                <div class="mini-event-block bg-red">
+                  <span class="mini-time">16:30–17:00</span>
+                  <span class="mini-title">KPIs</span>
+                </div>
               </div>
             </div>
 
@@ -572,8 +629,14 @@
                 <div class="col-day-number">6</div>
               </div>
               <div class="col-blocks-container">
-                <div class="mini-event-block bg-pink">14:00 - 15:00 Kiểm tra Shopee</div>
-                <div class="mini-event-block bg-red">16:30 - 17:00 Reviewing KPIs</div>
+                <div class="mini-event-block bg-pink">
+                  <span class="mini-time">14:00–15:00</span>
+                  <span class="mini-title">Shopee</span>
+                </div>
+                <div class="mini-event-block bg-red">
+                  <span class="mini-time">16:30–17:00</span>
+                  <span class="mini-title">KPIs</span>
+                </div>
               </div>
             </div>
 
@@ -584,8 +647,14 @@
                 <div class="col-day-number">7</div>
               </div>
               <div class="col-blocks-container">
-                <div class="mini-event-block bg-yellow">13:30 - 14:00 Meetings</div>
-                <div class="mini-event-block bg-red">16:30 - 17:00 Reviewing KPIs</div>
+                <div class="mini-event-block bg-yellow">
+                  <span class="mini-time">13:30–14:00</span>
+                  <span class="mini-title">Meetings</span>
+                </div>
+                <div class="mini-event-block bg-red">
+                  <span class="mini-time">16:30–17:00</span>
+                  <span class="mini-title">KPIs</span>
+                </div>
               </div>
             </div>
 
@@ -596,8 +665,14 @@
                 <div class="col-day-number">8</div>
               </div>
               <div class="col-blocks-container">
-                <div class="mini-event-block bg-blue">All day Ngày QT Phụ nữ</div>
-                <div class="mini-event-block bg-red">16:30 - 17:00 Reviewing KPIs</div>
+                <div class="mini-event-block bg-blue">
+                  <span class="mini-time">All day</span>
+                  <span class="mini-title">8/3</span>
+                </div>
+                <div class="mini-event-block bg-red">
+                  <span class="mini-time">16:30–17:00</span>
+                  <span class="mini-title">KPIs</span>
+                </div>
               </div>
             </div>
 

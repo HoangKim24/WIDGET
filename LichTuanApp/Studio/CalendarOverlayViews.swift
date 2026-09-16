@@ -3,7 +3,7 @@ import SwiftUI
 // MARK: - Daily Agenda and Week Schedule (Chuẩn 100% Theo Mẫu Tham Khảo)
 struct DailyAgendaAndWeekScheduleView: View {
     let events: [CalendarEvent]
-    var reminders: [String] = ["Trái cây", "Bơ sữa", "Uống đủ nước"]
+    var reminders: [String] = ["Fruits", "Cheese"]
 
     private let calendar = Calendar.current
 
@@ -15,8 +15,12 @@ struct DailyAgendaAndWeekScheduleView: View {
         return (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: monday) }
     }
 
+    private var displayEvents: [CalendarEvent] {
+        events.isEmpty ? SharedEventSeed.sampleEvents : events
+    }
+
     private var todayEvents: [CalendarEvent] {
-        events.filter { calendar.isDateInToday($0.startDate) }
+        displayEvents.filter { calendar.isDateInToday($0.startDate) }
     }
 
     var body: some View {
@@ -35,12 +39,12 @@ struct DailyAgendaAndWeekScheduleView: View {
 
     // MARK: - Component 1: Bảng 7 Cột Tuần
     private var weekMatrixCard: some View {
-        HStack(alignment: .top, spacing: 4) {
+        HStack(alignment: .top, spacing: 3) {
             ForEach(currentWeekDays, id: \.self) { day in
                 let isToday = calendar.isDateInToday(day)
                 let dayNum = calendar.component(.day, from: day)
                 let dayName = vietnameseShortDay(for: day)
-                let dayEvents = events.filter { calendar.isDate($0.startDate, inSameDayAs: day) }
+                let dayEvents = displayEvents.filter { calendar.isDate($0.startDate, inSameDayAs: day) }
 
                 VStack(spacing: 3) {
                     // Header của cột (Thứ + Ngày)
@@ -50,7 +54,7 @@ struct DailyAgendaAndWeekScheduleView: View {
                             .foregroundStyle(isToday ? Color(red: 0.18, green: 0.58, blue: 1.0) : .white.opacity(0.75))
                         Text("\(dayNum)")
                             .font(.system(size: 11, weight: .heavy, design: .rounded))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(isToday ? Color(red: 0.18, green: 0.58, blue: 1.0) : .white)
                     }
                     .padding(.bottom, 2)
                     .frame(maxWidth: .infinity)
@@ -62,22 +66,28 @@ struct DailyAgendaAndWeekScheduleView: View {
                     )
 
                     // Các khối màu sự kiện trong cột
-                    VStack(spacing: 2) {
+                    VStack(spacing: 2.5) {
                         if !dayEvents.isEmpty {
-                            ForEach(dayEvents.prefix(3)) { event in
-                                Text(miniBlockText(for: event))
-                                    .font(.system(size: 7, weight: .bold))
-                                    .foregroundStyle(isLightColor(event.category) ? Color.black : Color.white)
-                                    .lineLimit(2)
-                                    .multilineTextAlignment(.center)
-                                    .padding(.horizontal, 2)
-                                    .padding(.vertical, 2)
-                                    .frame(maxWidth: .infinity)
-                                    .background(eventColor(for: event.category))
-                                    .clipShape(RoundedRectangle(cornerRadius: 3))
+                            ForEach(dayEvents.prefix(4)) { event in
+                                VStack(spacing: 0.5) {
+                                    Text(formatShortTime(event))
+                                        .font(.system(size: 6, weight: .bold))
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.7)
+                                    Text(event.title)
+                                        .font(.system(size: 6.5, weight: .heavy))
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.7)
+                                }
+                                .padding(.horizontal, 1.5)
+                                .padding(.vertical, 2)
+                                .frame(maxWidth: .infinity)
+                                .background(eventColor(for: event.category))
+                                .foregroundStyle(isLightColor(event.category) ? Color.black : Color.white)
+                                .clipShape(RoundedRectangle(cornerRadius: 3))
                             }
                         } else {
-                            Spacer().frame(height: 38)
+                            Color.clear.frame(height: 48)
                         }
                     }
                     .frame(minHeight: 48)
@@ -204,13 +214,11 @@ struct DailyAgendaAndWeekScheduleView: View {
         return "\(formatter.string(from: event.startDate))–\(formatter.string(from: event.endDate))"
     }
 
-    private func miniBlockText(for event: CalendarEvent) -> String {
+    private func formatShortTime(_ event: CalendarEvent) -> String {
+        if event.isAllDay { return "All day" }
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm"
-        if event.isAllDay {
-            return "All day\n\(event.title)"
-        }
-        return "\(formatter.string(from: event.startDate))\n\(event.title)"
+        return "\(formatter.string(from: event.startDate))–\(formatter.string(from: event.endDate))"
     }
 
     private func eventColor(for category: EventCategory) -> Color {
