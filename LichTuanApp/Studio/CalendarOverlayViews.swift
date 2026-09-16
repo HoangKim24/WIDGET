@@ -103,16 +103,31 @@ struct WeeklyScheduleView: View {
                         )
                         .foregroundStyle(isToday ? Color.black : Color.white)
 
-                        // Nội dung công việc trong ngày
-                        if let firstEvent = dayEvents.first {
-                            HStack(spacing: 4) {
-                                Circle()
-                                    .fill(accentColor)
-                                    .frame(width: 5, height: 5)
-                                Text(firstEvent.title)
-                                    .font(.system(size: 11, weight: .semibold))
-                                    .foregroundStyle(.white)
-                                    .lineLimit(1)
+                        // Danh sách các khung giờ và công việc cụ thể trong ngày (VD: 07:00 - 10:00 Đi làm)
+                        if !dayEvents.isEmpty {
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 6) {
+                                    ForEach(dayEvents) { event in
+                                        HStack(spacing: 4) {
+                                            Text(formatTimeRange(event))
+                                                .font(.system(size: 8, weight: .bold))
+                                                .foregroundStyle(isToday ? Color.black : accentColor)
+                                                .padding(.horizontal, 4)
+                                                .padding(.vertical, 1.5)
+                                                .background(isToday ? accentColor : Color.white.opacity(0.12))
+                                                .clipShape(RoundedRectangle(cornerRadius: 4))
+
+                                            Text(event.title)
+                                                .font(.system(size: 11, weight: .semibold))
+                                                .foregroundStyle(.white)
+                                                .lineLimit(1)
+                                        }
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 3)
+                                        .background(Color.white.opacity(0.08))
+                                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                                    }
+                                }
                             }
                         } else {
                             Text(isToday ? "Hôm nay không có lịch" : "—")
@@ -176,6 +191,14 @@ struct WeeklyScheduleView: View {
         case 7: return "T7"
         default: return ""
         }
+    }
+
+    private func formatTimeRange(_ event: CalendarEvent) -> String {
+        if event.isAllDay { return "Cả ngày" }
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "vi_VN")
+        formatter.dateFormat = "HH:mm"
+        return "\(formatter.string(from: event.startDate)) - \(formatter.string(from: event.endDate))"
     }
 }
 

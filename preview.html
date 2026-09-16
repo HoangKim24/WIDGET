@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thời Khóa Biểu Tuần (Thứ 2 - CN) • Lock Screen Calendar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --phone-w: 393px;
+      --phone-h: 852px;
+      --primary-gold: #ffd159;
+      --accent-color: #ffd159;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: radial-gradient(circle at top right, #1f2233 0%, #0d0e12 60%, #050608 100%);
+      color: #ffffff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px 16px;
+      overflow-x: hidden;
+      user-select: none;
+    }
+
+    .top-helper-bar {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: rgba(255, 255, 255, 0.06);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 10px 22px;
+      border-radius: 99px;
+      margin-bottom: 18px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    .top-helper-bar .badge {
+      background: var(--accent-color);
+      color: #000;
+      font-weight: 800;
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      text-transform: uppercase;
+    }
+
+    .phone-container {
+      position: relative;
+      width: var(--phone-w);
+      height: var(--phone-h);
+      border-radius: 54px;
+      background: #000;
+      box-shadow: 
+        0 0 0 4px #2a2c33,
+        0 0 0 7px #121317,
+        0 25px 65px rgba(0, 0, 0, 0.8),
+        0 0 80px rgba(255, 209, 89, 0.15);
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    /* Dynamic Island */
+    .dynamic-island {
+      position: absolute;
+      top: 11px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 124px;
+      height: 35px;
+      background: #000000;
+      border-radius: 20px;
+      z-index: 999;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+    }
+
+    .island-camera { width: 11px; height: 11px; background: #11141d; border-radius: 50%; border: 1.5px solid #1a233a; }
+    .island-sensor { width: 8px; height: 8px; background: #0a0b0e; border-radius: 50%; }
+
+    /* Status Bar */
+    .status-bar {
+      position: absolute;
+      top: 14px;
+      left: 0;
+      right: 0;
+      padding: 0 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 600;
+      z-index: 990;
+      color: rgba(255, 255, 255, 0.9);
+      pointer-events: none;
+    }
+
+    .screen-viewport {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      background: #121318;
+      overflow: hidden;
+    }
+
+    .wallpaper-bg {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      z-index: 1;
+      transition: all 0.4s ease;
+    }
+
+    .wallpaper-dim {
+      position: absolute;
+      inset: 0;
+      background: #000;
+      opacity: 0.28;
+      z-index: 2;
+    }
+
+    /* Mock iOS Lock Screen */
+    .mock-lockscreen {
+      position: absolute;
+      inset: 0;
+      z-index: 10;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding-top: 52px;
+      padding-bottom: 22px;
+      transition: opacity 0.3s ease;
+    }
+
+    .mock-lockscreen.hidden { opacity: 0; }
+
+    .lock-clock-group { text-align: center; }
+    .lock-icon { font-size: 13px; opacity: 0.8; margin-bottom: 2px; display: inline-block; }
+    .lock-date { font-size: 14px; font-weight: 600; opacity: 0.9; }
+    .lock-time {
+      font-family: 'Outfit', sans-serif;
+      font-size: 78px;
+      font-weight: 800;
+      line-height: 1;
+      margin-top: 1px;
+      letter-spacing: -2px;
+      text-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+    }
+
+    .lock-bottom-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 38px 24px;
+    }
+
+    .circle-tool-btn {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(25px);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .home-indicator {
+      width: 134px;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.75);
+      border-radius: 10px;
+      margin: 0 auto;
+    }
+
+    /* App Header */
+    .app-header {
+      position: relative;
+      z-index: 30;
+      padding: 48px 16px 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(15, 16, 21, 0.65);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .app-header h1 {
+      font-size: 15px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .eye-btn {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 10px;
+      border-radius: 99px;
+      background: rgba(255, 209, 89, 0.2);
+      border: 1px solid var(--accent-color);
+      color: var(--accent-color);
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .eye-btn.off {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    /* 7-DAY WEEKLY SCHEDULE OVERLAY ON WALLPAPER */
+    .calendar-container {
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      z-index: 20;
+      top: 236px;
+      transition: top 0.3s ease;
+    }
+
+    .week-nav-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      padding: 0 4px;
+    }
+
+    .week-title-badge {
+      font-size: 12px;
+      font-weight: 800;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(10px);
+      padding: 4px 12px;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .week-arrow {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    /* 7 Dòng Từ Thứ Hai -> Chủ Nhật Có Khung Giờ Cụ Thể */
+    .week-table-card {
+      background: rgba(18, 20, 27, 0.78);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 22px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.45);
+    }
+
+    .day-slot-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 8px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      transition: all 0.2s;
+    }
+
+    .day-slot-row.today {
+      background: rgba(255, 209, 89, 0.18);
+      border-color: var(--accent-color);
+      box-shadow: 0 0 12px rgba(255, 209, 89, 0.25);
+    }
+
+    .day-col-badge {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.12);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .day-slot-row.today .day-col-badge {
+      background: var(--accent-color);
+      color: #000;
+    }
+
+    .day-title-text { font-size: 9px; font-weight: 800; text-transform: uppercase; line-height: 1; }
+    .day-num-text { font-size: 12px; font-weight: 800; line-height: 1; margin-top: 2px; }
+
+    .schedule-chips-container {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex: 1;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .schedule-chips-container::-webkit-scrollbar { display: none; }
+
+    .time-slot-chip {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 3px 8px;
+      border-radius: 7px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .day-slot-row.today .time-slot-chip {
+      background: rgba(0, 0, 0, 0.35);
+      border-color: rgba(255, 209, 89, 0.4);
+    }
+
+    .time-badge {
+      font-size: 9px;
+      font-weight: 800;
+      color: var(--accent-color);
+      letter-spacing: -0.2px;
+    }
+
+    .task-badge {
+      font-size: 11px;
+      font-weight: 600;
+      color: #ffffff;
+    }
+
+    .empty-slot-msg {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.35);
+      font-style: italic;
+    }
+
+    /* Quick Editor Drawer At Bottom */
+    .bottom-control-dock {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #14151c;
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 10px 14px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 40;
+      box-shadow: 0 -8px 25px rgba(0, 0, 0, 0.5);
+    }
+
+    .quick-edit-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    /* 7 Days Selector Buttons */
+    .week-days-selector {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 3px;
+    }
+
+    .day-select-btn {
+      padding: 6px 0;
+      border: none;
+      background: none;
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 11px;
+      font-weight: 700;
+      border-radius: 8px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+    }
+
+    .day-select-btn.active {
+      background: var(--accent-color);
+      color: #000;
+      font-weight: 800;
+    }
+
+    /* Time & Task Quick Input Row */
+    .quick-input-box {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 5px 8px;
+    }
+
+    .time-input {
+      width: 105px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 7px;
+      padding: 6px 8px;
+      color: var(--accent-color);
+      font-weight: 700;
+      font-size: 11px;
+      font-family: inherit;
+      outline: none;
+    }
+
+    .task-input {
+      flex: 1;
+      background: none;
+      border: none;
+      color: #fff;
+      font-weight: 600;
+      font-size: 12px;
+      font-family: inherit;
+      outline: none;
+    }
+
+    .task-input::placeholder { color: rgba(255, 255, 255, 0.4); }
+
+    .btn-add-slot {
+      background: var(--accent-color);
+      color: #000;
+      border: none;
+      font-weight: 800;
+      font-size: 11px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    /* Style Bar (Nền & Màu) */
+    .style-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .theme-preset-pills {
+      display: flex;
+      gap: 6px;
+    }
+
+    .preset-pill-sm {
+      padding: 4px 10px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      font-size: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .preset-pill-sm.active {
+      background: var(--accent-color);
+      color: #000;
+    }
+
+    .color-chips-sm {
+      display: flex;
+      gap: 8px;
+    }
+
+    .color-dot-sm {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+    }
+
+    .color-dot-sm.active {
+      border-color: #fff;
+      transform: scale(1.15);
+    }
+
+    /* Big Save Button */
+    .btn-save-final {
+      background: linear-gradient(135deg, var(--accent-color), #ffaa33);
+      color: #000;
+      border: none;
+      padding: 11px;
+      border-radius: 99px;
+      font-weight: 800;
+      font-size: 13px;
+      cursor: pointer;
+      box-shadow: 0 4px 18px rgba(255, 209, 89, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    /* Success Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    .modal-backdrop.show { display: flex; }
+
+    .modal-card {
+      background: #171821;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 24px;
+      width: 90%;
+      max-width: 390px;
+      padding: 24px;
+      text-align: center;
+    }
+
+    .modal-card h2 { font-size: 18px; margin-bottom: 8px; }
+    .modal-card p { font-size: 12px; color: rgba(255, 255, 255, 0.75); margin-bottom: 16px; line-height: 1.5; }
+    .modal-btn {
+      background: var(--accent-color);
+      color: #000;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 99px;
+      font-weight: 800;
+      font-size: 13px;
+      cursor: pointer;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="top-helper-bar">
+    <span class="badge">Lịch Trình Chi Tiết</span>
+    <p>💡 Chọn một thứ bất kỳ bên dưới (T2 - CN) rồi nhập khung giờ (VD: <b>7g-10g Đi làm</b>) để xem ngay trên hình nền!</p>
+  </div>
+
+  <div class="phone-container">
+    
+    <!-- Dynamic Island -->
+    <div class="dynamic-island">
+      <div class="island-camera"></div>
+      <div class="island-sensor"></div>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+      <span>09:41</span>
+      <div>📶 5G 🔋</div>
+    </div>
+
+    <div class="screen-viewport">
+      
+      <!-- App Header -->
+      <div class="app-header">
+        <h1><span>📅</span> Lịch Trình Tuần 7 Ngày</h1>
+        <button class="eye-btn" id="eyeBtn" onclick="toggleLockscreen()">
+          <span>👁️</span> <span id="eyeText">Mô phỏng: BẬT</span>
+        </button>
+      </div>
+
+      <!-- Wallpaper Background -->
+      <div class="wallpaper-bg" id="wpBg"></div>
+      <div class="wallpaper-dim"></div>
+
+      <!-- Mock iOS Lock Screen (09:41) -->
+      <div class="mock-lockscreen" id="mockLock">
+        <div class="lock-clock-group">
+          <div class="lock-icon">🔒</div>
+          <div class="lock-date">Thứ Ba, 15 tháng 9</div>
+          <div class="lock-time">09:41</div>
+        </div>
+
+        <div class="lock-bottom-actions">
+          <div class="circle-tool-btn">🔦</div>
+          <div class="circle-tool-btn">📷</div>
+        </div>
+      </div>
+
+      <!-- 7-DAY SCHEDULE OVERLAY (THỨ 2 ĐẾN CHỦ NHẬT) -->
+      <div class="calendar-container" id="calContainer">
+        
+        <!-- Week Navigation -->
+        <div class="week-nav-bar">
+          <button class="week-arrow" onclick="moveWeek(-1)">‹</button>
+          <div class="week-title-badge">
+            <span>✨</span> <span id="weekLabel">Tuần Này (15/9 - 21/9)</span>
+          </div>
+          <button class="week-arrow" onclick="moveWeek(1)">›</button>
+        </div>
+
+        <!-- Bảng 7 Dòng Tương Ứng Thứ 2 Đến Chủ Nhật -->
+        <div class="week-table-card">
+          
+          <!-- THỨ HAI -->
+          <div class="day-slot-row" id="row-T2">
+            <div class="day-col-badge">
+              <span class="day-title-text">T2</span>
+              <span class="day-num-text">14</span>
+            </div>
+            <div class="schedule-chips-container" id="slots-T2">
+              <div class="time-slot-chip">
+                <span class="time-badge">07:00 - 10:00</span>
+                <span class="task-badge">Đi làm công ty</span>
+              </div>
+              <div class="time-slot-chip">
+                <span class="time-badge">18:00 - 19:30</span>
+                <span class="task-badge">Tập gym</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- THỨ BA (HÔM NAY) -->
+          <div class="day-slot-row today" id="row-T3">
+            <div class="day-col-badge">
+              <span class="day-title-text">T3</span>
+              <span class="day-num-text">15</span>
+            </div>
+            <div class="schedule-chips-container" id="slots-T3">
+              <div class="time-slot-chip">
+                <span class="time-badge" style="color: #ffd159;">07:00 - 10:00</span>
+                <span class="task-badge">Đi làm</span>
+              </div>
+              <div class="time-slot-chip">
+                <span class="time-badge" style="color: #ffd159;">14:00 - 16:30</span>
+                <span class="task-badge">Gặp khách hàng</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- THỨ TƯ -->
+          <div class="day-slot-row" id="row-T4">
+            <div class="day-col-badge">
+              <span class="day-title-text">T4</span>
+              <span class="day-num-text">16</span>
+            </div>
+            <div class="schedule-chips-container" id="slots-T4">
+              <div class="time-slot-chip">
+                <span class="time-badge">07:00 - 10:00</span>
+                <span class="task-badge">Đi làm</span>
+              </div>
+              <div class="time-slot-chip">
+                <span class="time-badge">20:00 - 21:30</span>
+                <span class="task-badge">Học tiếng Anh</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- THỨ NĂM -->
+          <div class="day-slot-row" id="row-T5">
+            <div class="day-col-badge">
+              <span class="day-title-text">T5</span>
+              <span class="day-num-text">17</span>
+            </div>
+            <div class="schedule-chips-container" id="slots-T5">
+              <div class="time-slot-chip">
+                <span class="time-badge">07:00 - 10:00</span>
+                <span class="task-badge">Đi làm</span>
+              </div>
+              <div class="time-slot-chip">
+                <span class="time-badge">18:00 - 19:30</span>
+                <span class="task-badge">Chạy bộ</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- THỨ SÁU -->
+          <div class="day-slot-row" id="row-T6">
+            <div class="day-col-badge">
+              <span class="day-title-text">T6</span>
+              <span class="day-num-text">18</span>
+            </div>
+            <div class="schedule-chips-container" id="slots-T6">
+              <div class="time-slot-chip">
+                <span class="time-badge">07:00 - 10:00</span>
+                <span class="task-badge">Đi làm</span>
+              </div>
+              <div class="time-slot-chip">
+                <span class="time-badge">19:30 - 21:30</span>
+                <span class="task-badge">Review dự án</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- THỨ BẢY -->
+          <div class="day-slot-row" id="row-T7">
+            <div class="day-col-badge">
+              <span class="day-title-text">T7</span>
+              <span class="day-num-text">19</span>
+            </div>
+            <div class="schedule-chips-container" id="slots-T7">
+              <div class="time-slot-chip">
+                <span class="time-badge">09:00 - 11:30</span>
+                <span class="task-badge">Cafe dạo phố</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- CHỦ NHẬT -->
+          <div class="day-slot-row" id="row-CN">
+            <div class="day-col-badge">
+              <span class="day-title-text">CN</span>
+              <span class="day-num-text">20</span>
+            </div>
+            <div class="schedule-chips-container" id="slots-CN">
+              <div class="time-slot-chip">
+                <span class="time-badge">18:00 - 21:00</span>
+                <span class="task-badge">Nấu ăn gia đình</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Ô CẬP NHẬT LỊCH TRÌNH CỤ THỂ BÊN DƯỚI -->
+      <div class="bottom-control-dock">
+        
+        <div class="quick-edit-header">
+          <span>✍️ Cập nhật lịch trình: <strong id="selectedDayLabel" style="color: var(--accent-color);">Thứ Ba (Hôm nay)</strong></span>
+          <span style="font-size: 10px; opacity: 0.6;">Bấm thứ để đổi</span>
+        </div>
+
+        <!-- Chọn ngày từ Thứ 2 đến Chủ Nhật -->
+        <div class="week-days-selector">
+          <button class="day-select-btn" onclick="selectDayToEdit('T2', this)">T2</button>
+          <button class="day-select-btn active" onclick="selectDayToEdit('T3', this)">T3</button>
+          <button class="day-select-btn" onclick="selectDayToEdit('T4', this)">T4</button>
+          <button class="day-select-btn" onclick="selectDayToEdit('T5', this)">T5</button>
+          <button class="day-select-btn" onclick="selectDayToEdit('T6', this)">T6</button>
+          <button class="day-select-btn" onclick="selectDayToEdit('T7', this)">T7</button>
+          <button class="day-select-btn" onclick="selectDayToEdit('CN', this)">CN</button>
+        </div>
+
+        <!-- Nhập Khung Giờ & Việc Cụ Thể (VD: 7g - 10g Đi làm) -->
+        <div class="quick-input-box">
+          <input type="text" class="time-input" id="inputTime" value="07:00 - 10:00" placeholder="VD: 7g-10g">
+          <input type="text" class="task-input" id="inputTask" placeholder="Nội dung (VD: Đi làm)...">
+          <button class="btn-add-slot" onclick="addTimeSlot()">+ Thêm ô</button>
+        </div>
+
+        <!-- Tùy Biến Nhanh Nền & Màu -->
+        <div class="style-row">
+          <div class="theme-preset-pills">
+            <span class="preset-pill-sm active" onclick="setPreset('sunset', this)">Hoàng Hôn</span>
+            <span class="preset-pill-sm" onclick="setPreset('aurora', this)">Cực Quang</span>
+            <span class="preset-pill-sm" onclick="setPreset('obsidian', this)">Đen OLED</span>
+          </div>
+
+          <div class="color-chips-sm">
+            <div class="color-dot-sm active" style="background: #ffd159;" onclick="setColor('#ffd159', this)"></div>
+            <div class="color-dot-sm" style="background: #ff73a6;" onclick="setColor('#ff73a6', this)"></div>
+            <div class="color-dot-sm" style="background: #59d9ff;" onclick="setColor('#59d9ff', this)"></div>
+            <div class="color-dot-sm" style="background: #73f7bf;" onclick="setColor('#73f7bf', this)"></div>
+          </div>
+        </div>
+
+        <!-- Nút Xuất Hình Nền -->
+        <button class="btn-save-final" onclick="openSaveModal()">
+          <span>💾</span> Lưu Hình Nền Lịch Trình (Thứ 2 - CN)
+        </button>
+
+      </div>
+
+    </div>
+
+    <!-- Home Bar -->
+    <div style="position: absolute; bottom: 8px; left: 0; right: 0; pointer-events: none; z-index: 999;">
+      <div class="home-indicator"></div>
+    </div>
+
+  </div>
+
+  <!-- Modal Chúc Mừng -->
+  <div class="modal-backdrop" id="modalSave">
+    <div class="modal-card">
+      <div style="font-size: 36px; margin-bottom: 10px;">🎉</div>
+      <h2>Đã Lưu Hình Nền Lịch Trình!</h2>
+      <p>Hình nền lịch 7 ngày từ Thứ 2 đến Chủ Nhật với đầy đủ khung giờ chi tiết đã được tạo thành công! Hãy vào ứng dụng <strong>Ảnh</strong> > <strong>Chia sẻ</strong> > <strong>Dùng làm hình nền</strong>.</p>
+      <button class="modal-btn" onclick="closeSaveModal()">Tuyệt Vời, Tôi Đã Hiểu!</button>
+    </div>
+  </div>
+
+  <script>
+    const gradients = {
+      sunset: 'linear-gradient(135deg, #26143f, #d95959, #f2a666)',
+      aurora: 'linear-gradient(180deg, #0d1438, #2e6b94, #7340b3)',
+      obsidian: 'linear-gradient(135deg, #08080a, #1a1c24, #0d0d10)'
+    };
+
+    let selectedDay = 'T3';
+    let isMock = true;
+    let weekIndex = 0;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      setPreset('sunset');
+    });
+
+    function toggleLockscreen() {
+      isMock = !isMock;
+      const el = document.getElementById('mockLock');
+      const btn = document.getElementById('eyeBtn');
+      const txt = document.getElementById('eyeText');
+
+      if (isMock) {
+        el.classList.remove('hidden');
+        btn.classList.remove('off');
+        txt.textContent = 'Mô phỏng: BẬT';
+      } else {
+        el.classList.add('hidden');
+        btn.classList.add('off');
+        txt.textContent = 'Mô phỏng: TẮT';
+      }
+    }
+
+    function selectDayToEdit(day, btn) {
+      selectedDay = day;
+      document.querySelectorAll('.day-select-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      const labels = {
+        'T2': 'Thứ Hai',
+        'T3': 'Thứ Ba (Hôm nay)',
+        'T4': 'Thứ Tư',
+        'T5': 'Thứ Năm',
+        'T6': 'Thứ Sáu',
+        'T7': 'Thứ Bảy',
+        'CN': 'Chủ Nhật'
+      };
+      document.getElementById('selectedDayLabel').textContent = labels[day];
+    }
+
+    function addTimeSlot() {
+      const timeVal = document.getElementById('inputTime').value.trim();
+      const taskVal = document.getElementById('inputTask').value.trim();
+
+      if (!taskVal) {
+        alert('Vui lòng nhập nội dung công việc (VD: Đi làm)!');
+        return;
+      }
+
+      const container = document.getElementById('slots-' + selectedDay);
+      const chip = document.createElement('div');
+      chip.className = 'time-slot-chip';
+      chip.innerHTML = `
+        <span class="time-badge">${timeVal || 'Cả ngày'}</span>
+        <span class="task-badge">${taskVal}</span>
+      `;
+      container.appendChild(chip);
+
+      document.getElementById('inputTask').value = '';
+    }
+
+    function setPreset(name, el) {
+      document.getElementById('wpBg').style.backgroundImage = gradients[name];
+      if (el) {
+        document.querySelectorAll('.preset-pill-sm').forEach(p => p.classList.remove('active'));
+        el.classList.add('active');
+      }
+    }
+
+    function setColor(color, el) {
+      document.documentElement.style.setProperty('--accent-color', color);
+      document.querySelectorAll('.color-dot-sm').forEach(c => c.classList.remove('active'));
+      el.classList.add('active');
+    }
+
+    function moveWeek(delta) {
+      weekIndex += delta;
+      const label = document.getElementById('weekLabel');
+      if (weekIndex === 0) label.textContent = 'Tuần Này (15/9 - 21/9)';
+      else if (weekIndex === 1) label.textContent = 'Tuần Sau (22/9 - 28/9)';
+      else if (weekIndex === -1) label.textContent = 'Tuần Trước (8/9 - 14/9)';
+      else label.textContent = `Tuần ${weekIndex > 0 ? '+' + weekIndex : weekIndex}`;
+    }
+
+    function openSaveModal() { document.getElementById('modalSave').classList.add('show'); }
+    function closeSaveModal() { document.getElementById('modalSave').classList.remove('show'); }
+  </script>
+</body>
+</html>
