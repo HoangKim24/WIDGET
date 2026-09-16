@@ -1,239 +1,84 @@
-# Hướng dẫn cài Lich Tuan App lên iPhone (0 đồng)
+# Hướng Dẫn Cài Đặt Lock Screen Calendar Maker Lên iPhone 15 (0 Đồng)
 
-Hướng dẫn này giúp bạn đưa app **Lich Tuan** (SwiftUI + WidgetKit) lên iPhone cá nhân
-mà **không cần App Store, không cần tài khoản Apple Developer trả phí, không cần Mac/Xcode**.
-
-Cách tiếp cận: build IPA bằng GitHub Actions CI (đã có sẵn), sau đó ký lại bằng
-**Apple ID miễn phí** và cài lên máy bằng **Sideloadly** trên Windows.
+Hướng dẫn này giúp bạn đưa ứng dụng **Lock Screen Calendar Maker** lên chiếc iPhone 15 của bạn
+mà **không cần App Store, không cần tài khoản Apple Developer trả phí ($99/năm), không cần máy Mac**.
 
 ---
 
-## 0. Tổng quan quy trình
+## 0. Tổng Quan Quy Trình Siêu Đơn Giản
 
 ```
-[Tạo Gist + điền gistID vào code]
-            ↓
-[Push lên GitHub] → [CI tự build ra file .ipa]  (tự động, ~10-15 phút)
-            ↓
-[Tải file .ipa từ artifact]
-            ↓
-[Sideloadly trên Windows ký bằng Apple ID miễn phí]
-            ↓
-[Cài lên iPhone bằng cáp USB]
-            ↓
-[Mỗi 7 ngày gia hạn lại 1 lần]
+[Push code lên GitHub] 
+          ↓
+[GitHub Actions tự động build file .ipa] (khoảng 3 phút)
+          ↓
+[Tải file .ipa từ mục Actions về máy tính Windows]
+          ↓
+[Mở Sideloadly trên Windows + Cắm iPhone 15 qua cáp USB-C]
+          ↓
+[Bấm Start để cài đặt vào iPhone 15]
 ```
+
+> **Điểm tuyệt vời của phiên bản mới**: 
+> Ứng dụng hoạt động **100% offline**, không cần mạng, không cần tạo GitHub Gist, không cần token phức tạp. Mọi thứ lưu thẳng trên iPhone và xuất ảnh trực tiếp vào Thư viện ảnh!
 
 ---
 
-## 1. Trước khi bắt đầu (chuẩn bị)
+## 1. Chuẩn Bị (Chỉ Cần Làm 1 Lần)
 
-Bạn cần có:
-
-| Thứ cần | Mô tả | Chi phí |
+| Công cụ | Mô tả | Chi phí |
 |---|---|---|
-| iPhone (iOS 16+) | Là máy bạn muốn cài | Có sẵn |
-| Windows PC | Đang dùng | Có sẵn |
-| Apple ID miễn phí | Tạo tại https://appleid.apple.com | 0đ |
-| iTunes (bản desktop) | Driver cho iPhone | 0đ |
-| Sideloadly | Tải tại https://sideloadly.io | 0đ |
-| Tài khoản GitHub | Để tạo Gist chứa dữ liệu sự kiện | 0đ |
-
-> **Lưu ý về Apple ID:** Nếu Apple ID của bạn bật **2FA (xác thực 2 lớp)**, Sideloadly
-> sẽ yêu cầu dùng **App-Specific Password** thay vì mật khẩu chính.
-> Tạo tại https://appleid.apple.com → Sign-In and Security → App-Specific Passwords.
+| **iPhone 15** | Điện thoại bạn muốn cài | Có sẵn |
+| **Máy tính Windows** | Máy bạn đang dùng | Có sẵn |
+| **Cáp USB-C** | Cáp sạc đi kèm iPhone 15 | Có sẵn |
+| **iTunes cho Windows** | Driver kết nối iPhone: [Tải tại đây](https://www.apple.com/itunes/) (bản Windows 64-bit) | 0đ |
+| **Sideloadly** | Phần mềm cài file .ipa lên iPhone: [Tải tại sideloadly.io](https://sideloadly.io) | 0đ |
+| **Apple ID cá nhân** | Chính là tài khoản iCloud đang đăng nhập trên iPhone của bạn | 0đ |
 
 ---
 
-## 2. Bước A — Cấu hình đồng bộ dữ liệu qua Gist
+## 2. Bước 1 — Lấy File Cài Đặt (.ipa) Từ GitHub
 
-**Lý do bỏ App Group:** Apple ID miễn phí (Personal Team) **không được cấp capability
-`App Groups`** theo bảng [Supported capabilities (iOS)](https://developer.apple.com/help/account/reference/supported-capabilities-ios/)
-của Apple. Nếu vẫn giữ App Group, app cài được nhưng widget chỉ hiển thị dữ liệu mẫu.
-
-Repo này đã chuyển sang chia sẻ dữ liệu qua một **GitHub Gist**:
-
-```
-[App chính] --PATCH kèm token--> [Gist: lichtuan-events.json] <--GET công khai-- [Widget]
-```
-
-Bundle ID đã được đổi sẵn sang `com.hoangkim24.*` và 2 file entitlements đã bị xoá,
-nên không còn capability nào cần đăng ký.
-
-### 2.1. Tạo Gist
-
-1. Vào https://gist.github.com.
-2. Đặt tên file: `lichtuan-events.json`.
-3. Nội dung khởi tạo: `[]`.
-4. Bấm **Create secret gist**.
-5. Chép **Gist ID** trong URL, ví dụ với
-   `https://gist.github.com/HoangKim24/3f9a1c2b4d5e6f7081920a1b2c3d4e5f`
-   thì ID là `3f9a1c2b4d5e6f7081920a1b2c3d4e5f`.
-
-### 2.2. Điền Gist ID vào code
-
-Sửa `Shared/RemoteSyncConfig.swift`:
-
-```swift
-static let gistID = "3f9a1c2b4d5e6f7081920a1b2c3d4e5f"
-```
-
-> Đây là hằng số biên dịch vì widget extension không đọc được UserDefaults của app chính.
-> Gist để chế độ secret nên ID này không tìm thấy qua tìm kiếm, nhưng ai biết ID vẫn đọc được.
-> Đừng lưu dữ liệu nhạy cảm trong đó.
-
-### 2.3. Tạo GitHub token
-
-1. Vào https://github.com/settings/tokens → **Generate new token (classic)**.
-2. Chỉ tick đúng scope **`gist`**.
-3. Chép token, sẽ nhập trong app ở bước sau.
-
-> **Tuyệt đối không** ghi token vào mã nguồn hay commit lên GitHub. App lưu token
-> trong UserDefaults của máy bạn.
+1. Push mã nguồn này lên kho GitHub của bạn (nhánh `main`).
+2. Vào trang GitHub của dự án > bấm vào tab **Actions**.
+3. Bạn sẽ thấy tiến trình `Build and Package IPA` đang chạy (khoảng 3 phút).
+4. Khi chạy xong (hiện dấu tích xanh ✅), bấm vào workflow đó > kéo xuống mục **Artifacts**.
+5. Nhấn tải file **`lich-tuan-ipa`** về máy tính (giải nén ra sẽ có file `LichTuanApp.ipa`).
 
 ---
 
-## 3. Bước B — Build file IPA bằng GitHub Actions
+## 3. Bước 2 — Cài Đặt Vào iPhone 15 Bằng Sideloadly
 
-Repo này đã có sẵn workflow `.github/workflows/build.yml`, push lên `main` là CI tự build.
-
-```bash
-cd D:\Widget
-git add .
-git commit -m "Bo App Group, dong bo du lieu widget qua Gist"
-git push origin main
-```
-
-Sau khi push, len GitHub: repo → tab **Actions** → cho workflow chay xong
-(khoang **10-15 phut**, co 3 job: build → ui-tests → archive).
-
-Workflow chi build IPA khi **push vao nhanh `main`** (job `archive` co dieu kien
-`github.ref == 'refs/heads/main'`).
-
-### Tai file IPA ve
-
-1. Vao tab **Actions** → chon lan chay moi nhat (da xong).
-2. O phan **Artifacts** → click **`lich-tuan-ipa`** de tai xuong.
-3. Giai nen ra duoc file **`LichTuanApp.ipa`**.
-
-> **Luu y:** File IPA nay la **unsigned** (chua ky) — Sideloadly se ky lai bang
-> Apple ID mien phi cua ban o buoc tiep theo. Ban khong can sua gi them o CI.
+1. Cắm iPhone 15 vào máy tính Windows bằng cáp USB-C.
+2. Mở ứng dụng **Sideloadly** trên máy tính.
+3. Ở mục **iDevice**, bạn sẽ thấy tên chiếc iPhone 15 của bạn xuất hiện.
+4. Kéo file `LichTuanApp.ipa` thả vào ô biểu tượng IPA trong Sideloadly.
+5. Nhập địa chỉ **Apple ID** (email iCloud) của bạn vào ô **Apple account**.
+6. Bấm nút **Start**.
+   - *Nếu Apple ID bật xác thực 2 lớp*: Một mã 6 số sẽ hiện trên màn hình iPhone, bạn nhập mã này vào Sideloadly để tiếp tục.
+7. Đợi khoảng 1-2 phút, khi thanh tiến trình báo **Done** là app đã được cài xong trên iPhone 15!
 
 ---
 
-## 4. Buoc C — Cai len iPhone bang Sideloadly (Windows)
+## 4. Bước 3 — Mở App Lần Đầu Trên iPhone 15
 
-### Chuan bi
+Vì đây là app cá nhân bạn tự cài, iOS yêu cầu bạn xác nhận độ tin cậy lần đầu tiên:
 
-1. Cai **iTunes** (neu chua co) → khoi dong lai may mot lan cho sach driver.
-2. Tai va cai **Sideloadly** tu https://sideloadly.io.
+1. **Bật Chế độ Nhà phát triển (Developer Mode)**:
+   - Vào **Cài đặt** > **Quyền riêng tư & Bảo mật** > Kéo xuống dưới cùng chọn **Chế độ Nhà phát triển**.
+   - Bật công tắc sang xanh > iPhone sẽ yêu cầu khởi động lại máy > Khởi động lại xong bấm **Bật** và nhập mật khẩu mở khóa màn hình.
+2. **Tin cậy chứng chỉ ứng dụng**:
+   - Vào **Cài đặt** > **Cài đặt chung** > **Quản lý VPN & Thiết bị**.
+   - Ở mục *Ứng dụng của nhà phát triển*, nhấn vào email Apple ID của bạn > Bấm **Tin cậy (Trust)**.
 
-### Cac buoc cai
-
-```
-1. Mo Sideloadly tren Windows
-2. Truong "IPA" → bam chon file LichTuanApp.ipa da tai
-3. Truong "Apple ID" → nhap email Apple ID mien phi
-   (neu bat 2FA thi dung App-Specific Password)
-4. Cam iPhone vao may tinh bang cap USB, chon "Trust" tren iPhone
-5. Bam nut "Start" va cho qua trinh ky + cai hoan tat
-6. Tren iPhone:
-   Settings → General → VPN & Device Management
-   → chon ho so Apple ID cua ban → bam "Trust"
-```
-
-App **Lich Tuan** se xuat hien tren Home Screen.
-
-### Nhap token trong app
-
-Mo app **Lich Tuan** → keo xuong muc **Widget Sync**:
-
-1. Bam **Cau hinh GitHub token** → dan token co scope `gist` → bam **Luu**.
-2. Dong sheet lai, dong **SyncStatusRow** phai bao "Dong bo thanh cong luc ...".
-3. Neu bao loi, doi chieu bang **Xu ly su co** ben duoi.
-
-### Kiem tra widget
-
-1. Nhan giu nen Home Screen → bam nut **+**.
-2. Tim **Lich Tuan** trong danh sach widget.
-3. Them widget (Lock Screen hoac Home Screen).
-4. Vao app → them 1 su kien → cho widget refresh (co the mat vai phut) hoac
-   bam **Day du lieu len widget** de goi `WidgetCenter.reloadAllTimelines()`.
-
-> Widget doc Gist qua mang, nen iPhone phai co ket noi internet o lan tai dau tien.
-> Sau do du lieu duoc cache lai va van hien thi khi offline.
+**Xong!** Bạn đã có thể mở ứng dụng **Studio Lịch Khóa** trên màn hình chính iPhone 15, thỏa sức thiết kế hình nền và lưu vào Thư viện ảnh!
 
 ---
 
-## 5. Buoc D — Gia han (bat buoc moi 7 ngay)
+## 5. Hướng Dẫn Cài Hình Nền Vừa Tạo Làm Màn Hình Khóa iPhone
 
-Apple ID mien phi chi cap chung chi **7 ngay**. Het han la app khong mo duoc,
-phai ky lai. Co 2 cach:
-
-### Cach 1: Sideloadly (don gian, cam day)
-
-```
-Moi khi gan het han:
-1. Cam iPhone vao PC
-2. Mo Sideloadly → chon lai file IPA (hoac dung Refresh)
-3. Bam Start de ky + cai lai
-```
-
-### Cach 2: SideStore (tu dong, khong can PC sau lan dau)
-
-SideStore la phien ban AltStore chay **ngay tren iPhone**, dung VPN loopback de
-tu ky lai app qua WiFi, khong can cam day.
-
-```
-Lan dau:
-1. Cai SideStore len iPhone thong qua Sideloadly/AltServer
-2. Dang nhap Apple ID tren SideStore
-3. Cai file LichTuanApp.ipa tu SideStore
-
-Sau do:
-- SideStore tu gia han app moi ngay khi iPhone mo WiFi
-- Ban chi can dam bao iPhone thinh thoang ket noi WiFi
-```
-
----
-
-## 6. Xu ly su co
-
-| Van de | Nguyen nhan co the | Cach xu ly |
-|---|---|---|
-| Sideloadly bao loi Apple ID | Bat 2FA | Dung App-Specific Password thay cho mat khau chinh |
-| iPhone khong nhan dien | Chua cai iTunes / chua Trust | Cai iTunes, khoi dong lai, bam "Trust This Computer" |
-| App khong mo duoc sau vai ngay | Chung chi het han 7 ngay | Ky lai bang Sideloadly hoac dung SideStore |
-| Widget chi hien du lieu mau | `gistID` con de rong, hoac Gist chua co du lieu | Dien `gistID` trong `Shared/RemoteSyncConfig.swift` roi build lai; bam "Day du lieu len widget" trong app |
-| App bao "Chua nhap GitHub token" | Chua luu token | Widget Sync → Cau hinh GitHub token |
-| App bao "GitHub tra ve ma loi 401" | Token sai hoac het han | Tao token moi voi scope `gist` |
-| App bao "GitHub tra ve ma loi 404" | Sai Gist ID, hoac token khong so huu Gist do | Kiem tra lai ID; Gist phai thuoc chinh tai khoan tao token |
-| App bao "Gist khong chua file ..." | Ten file trong Gist khac `lichtuan-events.json` | Doi ten file trong Gist cho khop `RemoteSyncConfig.fileName` |
-| Widget khong cap nhat ngay | WidgetKit tu quyet dinh lich refresh | Cho vai phut, hoac go widget ra roi them lai |
-| CI build fail | project.yml sai cu phap | Xem log job "build" trong Actions, sua roi push lai |
-| Khong tim thay artifact IPA | Chua push vao nhanh `main` / CI chua chay xong job `archive` | Kiem tra nhanh hien tai va cho tat ca job hoan tat |
-
----
-
-## 7. Tong ket chi phi va han che
-
-| Hang muc | Chi phi |
-|---|---|
-| Apple ID mien phi | 0d |
-| Sideloadly / SideStore | 0d |
-| GitHub Actions CI | 0d (repo public) |
-| Gia han 7 ngay | 0d (ton ~2 phut neu dung Sideloadly) |
-| **Tong** | **0d** |
-
-**Han che can nho:**
-
-- Phai **gia han moi 7 ngay** (tru khi dung SideStore thi tu dong).
-- Chung chi free chi chay tren **dung 1 thiet bi** da cai.
-- Day la cai **ca nhan**, khong public len App Store duoc.
-- Moi lan ky lai chiem **2 App ID** (app + widget extension). Apple ID mien phi
-  chi giu toi da **10 App ID** cung luc, moi cai het han sau 1 tuan.
-- Du lieu app ↔ widget di qua **GitHub Gist**, khong dung App Group nua, vi
-  Apple ID mien phi khong duoc cap capability do.
-- Widget can mang o lan tai dau tien, sau do dung cache khi offline.
-- Gist o che do secret nhung **khong duoc ma hoa**. Ai co Gist ID deu doc duoc,
-  nen dung luu thong tin nhay cam trong lich.
+1. Mở ứng dụng **Studio Lịch Khóa**, chọn kiểu nền, kiểu lịch ưng ý rồi bấm nút **Lưu Hình Nền Màn Hình Khóa**.
+2. Mở ứng dụng **Ảnh (Photos)** trên iPhone, mở bức ảnh hình nền vừa được lưu.
+3. Bấm vào nút **Chia sẻ** (biểu tượng hình vuông có mũi tên chỉ lên ở góc trái dưới).
+4. Chọn **Dùng làm hình nền (Use as Wallpaper)**.
+5. Nhấn **Thêm** ở góc trên bên phải > Chọn **Đặt làm cặp hình nền**.

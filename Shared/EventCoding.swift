@@ -1,7 +1,17 @@
 import Foundation
 
-/// Bộ mã hóa/giải mã dùng chung cho mọi nơi đọc ghi sự kiện,
-/// bảo đảm app chính và widget luôn hiểu cùng một định dạng JSON.
+enum EventCodingError: LocalizedError {
+    case encodingFailed
+
+    var errorDescription: String? {
+        switch self {
+        case .encodingFailed:
+            return "Không thể mã hóa hoặc giải mã dữ liệu sự kiện."
+        }
+    }
+}
+
+/// Bộ mã hóa/giải mã dùng chung cho mọi nơi đọc ghi sự kiện.
 enum EventCoding {
     static var encoder: JSONEncoder {
         let encoder = JSONEncoder()
@@ -16,20 +26,20 @@ enum EventCoding {
         return decoder
     }
 
-    /// Chuyển danh sách sự kiện thành chuỗi JSON để đẩy lên Gist.
+    /// Chuyển danh sách sự kiện thành chuỗi JSON.
     static func jsonString(from events: [CalendarEvent]) throws -> String {
         let data = try encoder.encode(events)
         guard let text = String(data: data, encoding: .utf8) else {
-            throw RemoteSyncError.encodingFailed
+            throw EventCodingError.encodingFailed
         }
 
         return text
     }
 
-    /// Đọc danh sách sự kiện từ chuỗi JSON tải về.
+    /// Đọc danh sách sự kiện từ chuỗi JSON.
     static func events(fromJSON text: String) throws -> [CalendarEvent] {
         guard let data = text.data(using: .utf8) else {
-            throw RemoteSyncError.encodingFailed
+            throw EventCodingError.encodingFailed
         }
 
         return try decoder.decode([CalendarEvent].self, from: data)

@@ -161,7 +161,7 @@ private struct EditorHeroView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Tạo sự kiện của bạn")
                     .font(.title2.bold())
-                Text("Chọn danh mục và thời gian để lịch và widget luôn đồng bộ.")
+                Text("Chọn danh mục và thời gian để tự động xuất hiện trên hình nền lịch của bạn.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)

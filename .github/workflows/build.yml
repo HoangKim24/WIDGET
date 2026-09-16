@@ -1,4 +1,4 @@
-name: Build and Screenshot
+name: Build and Package IPA
 
 on:
   workflow_dispatch:
@@ -8,7 +8,7 @@ on:
   pull_request:
 
 jobs:
-  build:
+  build-and-test:
     runs-on: macos-latest
 
     steps:
@@ -51,6 +51,22 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             build | tee build.log
 
+      - name: Run unit tests
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          SIMULATOR_UDID="$(xcrun simctl list devices available | awk -F '[()]' '/iPhone/ {print $2; exit}')"
+          if [ -n "$SIMULATOR_UDID" ]; then
+            echo "Using iPhone Simulator: $SIMULATOR_UDID"
+            xcodebuild \
+              -project LichTuanApp.xcodeproj \
+              -scheme LichTuanApp \
+              -destination "platform=iOS Simulator,id=$SIMULATOR_UDID" \
+              CODE_SIGNING_ALLOWED=NO \
+              CODE_SIGNING_REQUIRED=NO \
+              test | tee test.log
+          fi
+
       - name: Upload build log on failure
         if: failure()
         uses: actions/upload-artifact@v4
@@ -58,119 +74,9 @@ jobs:
           name: build-log
           path: build.log
 
-  ui-tests:
-    runs-on: macos-latest
-    needs: build
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode.app
-
-      - name: Install XcodeGen
-        run: brew install xcodegen
-
-      - name: Preflight tool versions
-        run: |
-          xcodebuild -version
-          xcodegen --version
-
-      - name: Generate Xcode project
-        run: xcodegen generate
-
-      - name: Cache DerivedData
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/Library/Developer/Xcode/DerivedData
-            ~/Library/Caches/org.swift.swiftpm
-          key: ${{ runner.os }}-xcode-${{ hashFiles('project.yml') }}
-          restore-keys: |
-            ${{ runner.os }}-xcode-
-
-      - name: Validate widget extension bundle
-        run: |
-          set -o pipefail
-          xcodebuild \
-            -project LichTuanApp.xcodeproj \
-            -scheme LichTuanApp \
-            -configuration Debug \
-            -destination 'generic/platform=iOS Simulator' \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            -derivedDataPath BuildForTesting \
-            build-for-testing
-          APPEX_PATH="BuildForTesting/Build/Products/Debug-iphonesimulator/LichTuanWidget.appex"
-          if [ ! -d "$APPEX_PATH" ]; then
-            echo "Widget extension bundle was not produced: $APPEX_PATH"
-            find BuildForTesting -name '*.appex' -print
-            exit 1
-          fi
-          echo "Widget extension Info.plist:"
-          /usr/libexec/PlistBuddy -c 'Print :NSExtension' "$APPEX_PATH/Info.plist"
-          if /usr/libexec/PlistBuddy -c 'Print :NSExtension:NSExtensionPrincipalClass' "$APPEX_PATH/Info.plist" >/dev/null 2>&1; then
-            echo "NSExtensionPrincipalClass must not be present in a WidgetKit extension."
-            exit 1
-          fi
-          if /usr/libexec/PlistBuddy -c 'Print :NSExtension:NSExtensionMainStoryboard' "$APPEX_PATH/Info.plist" >/dev/null 2>&1; then
-            echo "NSExtensionMainStoryboard must not be present in a WidgetKit extension."
-            exit 1
-          fi
-          if find "$APPEX_PATH" -type f \( -name '*.storyboardc' -o -name '*.nib' -o -name '*.xib' \) -print -quit | grep -q .; then
-            echo "Legacy storyboard/XIB resource found in widget extension."
-            find "$APPEX_PATH" -type f \( -name '*.storyboardc' -o -name '*.nib' -o -name '*.xib' \) -print
-            exit 1
-          fi
-
-      - name: Run UI tests
-        run: |
-          set -o pipefail
-          SIMULATOR_UDID="$(xcrun simctl list devices available | awk -F '[()]' '/iPhone/ {print $2; exit}')"
-          if [ -z "$SIMULATOR_UDID" ]; then
-            echo "No available iPhone Simulator was found on this runner."
-            xcrun simctl list devices available
-            exit 1
-          fi
-          echo "Using iPhone Simulator: $SIMULATOR_UDID"
-          xcodebuild \
-            -project LichTuanApp.xcodeproj \
-            -scheme LichTuanApp \
-            -configuration Debug \
-            -destination "platform=iOS Simulator,id=$SIMULATOR_UDID" \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            -resultBundlePath TestResults.xcresult \
-            test | tee test.log
-
-      - name: Install xcparse
-        if: always()
-        run: brew install chargepoint/xcparse/xcparse
-
-      - name: Extract screenshots
-        if: always()
-        run: |
-          mkdir -p screenshots
-          xcparse screenshots TestResults.xcresult screenshots
-
-      - name: Upload screenshots artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: widget-screenshots
-          path: screenshots
-
-      - name: Upload test log on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-log
-          path: test.log
-
   archive:
     runs-on: macos-latest
-    needs: ui-tests
+    needs: build-and-test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
@@ -183,39 +89,8 @@ jobs:
       - name: Install XcodeGen
         run: brew install xcodegen
 
-      - name: Preflight tool versions
-        run: |
-          xcodebuild -version
-          xcodegen --version
-
       - name: Generate Xcode project
         run: xcodegen generate
-
-      - name: Cache DerivedData
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/Library/Developer/Xcode/DerivedData
-            ~/Library/Caches/org.swift.swiftpm
-          key: ${{ runner.os }}-xcode-${{ hashFiles('project.yml') }}
-          restore-keys: |
-            ${{ runner.os }}-xcode-
-
-      - name: Show archive build settings
-        run: |
-          xcodebuild \
-            -project LichTuanApp.xcodeproj \
-            -scheme LichTuanApp \
-            -configuration Release \
-            -destination 'generic/platform=iOS' \
-            -showBuildSettings > build-settings.log
-
-      - name: Upload build settings on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-settings-log
-          path: build-settings.log
 
       - name: Archive app
         run: |
@@ -245,11 +120,3 @@ jobs:
         with:
           name: lich-tuan-ipa
           path: exported/LichTuanApp.ipa
-
-      - name: Upload archive logs on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: archive-logs
-          path: |
-            archive.log

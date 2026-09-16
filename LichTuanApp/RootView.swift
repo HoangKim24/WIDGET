@@ -1,691 +1,327 @@
 import SwiftUI
 
+/// Màn hình gốc điều hướng của ứng dụng.
 struct ContentView: View {
     @StateObject private var viewModel = EventListViewModel()
-    @State private var selectedDay = Calendar.current.startOfDay(for: Date())
-    @State private var editorContext: EditorContext?
-    @State private var showAppIconConcepts = false
-    @State private var showSyncSettings = false
 
-    private var weekDays: [Date] {
+    var body: some View {
+        RootTabView(viewModel: viewModel)
+    }
+}
+
+/// Tab điều hướng chính với 2 phân hệ rõ ràng: Studio Thiết Kế và Quản Lý Sự Kiện.
+struct RootTabView: View {
+    @ObservedObject var viewModel: EventListViewModel
+    @State private var selectedTab = 0
+
+    private let studioAccent = Color(red: 1.0, green: 0.82, blue: 0.35)
+
+    var body: some View {
+        TabView(selection: $selectedTab) {
+            // MARK: - Tab 1: Studio Thiết Kế Hình Nền Lịch
+            LockScreenStudioView(viewModel: viewModel)
+                .tabItem {
+                    Label("Thiết Kế", systemImage: "sparkles")
+                }
+                .tag(0)
+
+            // MARK: - Tab 2: Quản Lý Sự Kiện & Lịch Biểu
+            EventListView(viewModel: viewModel)
+                .tabItem {
+                    Label("Sự Kiện", systemImage: "calendar.badge.clock")
+                }
+                .tag(1)
+        }
+        .tint(studioAccent)
+    }
+}
+
+/// Màn hình danh sách và quản lý sự kiện của người dùng.
+struct EventListView: View {
+    @ObservedObject var viewModel: EventListViewModel
+    @State private var editorContext: EventEditorContext?
+    @State private var filterMode: EventFilterMode = .all
+
+    enum EventFilterMode: String, CaseIterable, Identifiable {
+        case all = "Tất Cả"
+        case today = "Hôm Nay"
+        case upcoming = "Sắp Tới"
+
+        var id: String { rawValue }
+    }
+
+    private var filteredEvents: [CalendarEvent] {
         let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
-        let weekday = calendar.component(.weekday, from: today)
-        let daysFromMonday = (weekday + 5) % 7
-        let monday = calendar.date(byAdding: .day, value: -daysFromMonday, to: today) ?? today
-        return (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: monday) }
-    }
-
-    private var selectedEvents: [CalendarEvent] {
-        viewModel.events.filter { Calendar.current.isDate($0.startDate, inSameDayAs: selectedDay) }
-    }
-
-    private var todayEvents: [CalendarEvent] {
-        viewModel.events.filter { Calendar.current.isDateInToday($0.startDate) }
-    }
-
-    private var nextEvent: CalendarEvent? {
-        viewModel.events.first { $0.startDate >= Date() }
+        let now = Date()
+        switch filterMode {
+        case .all:
+            return viewModel.events
+        case .today:
+            return viewModel.events.filter { calendar.isDateInToday($0.startDate) }
+        case .upcoming:
+            return viewModel.events.filter { $0.startDate >= now }
+        }
     }
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    WeekHeaderView(days: weekDays, selectedDay: $selectedDay)
+            ZStack {
+                Color(red: 0.08, green: 0.08, blue: 0.10)
+                    .ignoresSafeArea()
 
-                    QuickMetricsView(todayCount: todayEvents.count, nextEvent: nextEvent)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 18) {
+                        // Thẻ giới thiệu & Thống kê nhanh
+                        summaryHeroCard
 
-                    TimelineSection(
-                        selectedDay: selectedDay,
-                        events: selectedEvents,
-                        onAdd: { editorContext = .add },
-                        onSelect: { editorContext = .edit($0) }
-                    )
+                        // Bộ lọc danh mục sự kiện
+                        filterSegmentControl
+
+                        // Danh sách sự kiện
+                        if filteredEvents.isEmpty {
+                            emptyStateView
+                        } else {
+                            LazyVStack(spacing: 12) {
+                                ForEach(filteredEvents) { event in
+                                    EventCardRow(event: event) {
+                                        editorContext = .edit(event)
+                                    } onDelete: {
+                                        withAnimation(.spring(response: 0.3)) {
+                                            viewModel.delete(event)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 12)
+                    .padding(.bottom, 32)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 16)
-                .padding(.top, 8)
-                .padding(.bottom, 24)
             }
-            .background(Color(.systemGroupedBackground).ignoresSafeArea())
-            .navigationTitle(monthTitle)
+            .navigationTitle("Sự Kiện Của Bạn")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Hôm nay") {
-                        selectedDay = Calendar.current.startOfDay(for: Date())
-                    }
-                }
-
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         editorContext = .add
                     } label: {
-                        Image(systemName: "plus")
+                        HStack(spacing: 4) {
+                            Image(systemName: "plus")
+                                .font(.system(size: 13, weight: .bold))
+                            Text("Thêm Mới")
+                                .font(.system(size: 13, weight: .semibold))
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(
+                            Capsule()
+                                .fill(Color(red: 1.0, green: 0.82, blue: 0.35))
+                        )
+                        .foregroundStyle(Color.black)
                     }
-                    .accessibilityLabel("Thêm sự kiện")
-                }
-
-                ToolbarItem(placement: .topBarTrailing) {
-                    Menu {
-                        Button {
-                            viewModel.load()
-                        } label: {
-                            Label("Làm mới", systemImage: "arrow.clockwise")
-                        }
-
-                        Button {
-                            showAppIconConcepts = true
-                        } label: {
-                            Label("Xem biểu tượng", systemImage: "paintpalette.fill")
-                        }
-
-                        Menu("Đồng bộ widget") {
-                            Button {
-                                showSyncSettings = true
-                            } label: {
-                                Label("Cấu hình GitHub token", systemImage: "key.fill")
-                            }
-
-                            Button {
-                                viewModel.syncToRemote()
-                            } label: {
-                                Label("Đẩy dữ liệu lên widget", systemImage: "arrow.up.circle.fill")
-                            }
-                            .disabled(!viewModel.isRemoteSyncReady)
-
-                            Button {
-                                viewModel.pullFromRemote()
-                            } label: {
-                                Label("Tải dữ liệu từ Gist", systemImage: "arrow.down.circle.fill")
-                            }
-                            .disabled(!RemoteSyncConfig.isConfigured)
-                        }
-
-                        Divider()
-
-                        Button(role: .destructive) {
-                            viewModel.clearAll()
-                        } label: {
-                            Label("Xóa tất cả sự kiện", systemImage: "trash")
-                        }
-                        .disabled(viewModel.events.isEmpty)
-                    } label: {
-                        Image(systemName: "ellipsis.circle")
-                    }
-                    .accessibilityLabel("Tùy chọn")
                 }
             }
             .sheet(item: $editorContext) { context in
-                switch context {
-                case .add:
-                    EventEditorView(event: nil) { newEvent in
-                        viewModel.add(newEvent)
-                        editorContext = nil
-                    }
-                case .edit(let event):
-                    EventEditorView(event: event) { updatedEvent in
-                        viewModel.update(updatedEvent)
-                        editorContext = nil
-                    }
-                }
-            }
-            .sheet(isPresented: $showAppIconConcepts) {
-                AppIconConceptsView()
-            }
-            .sheet(isPresented: $showSyncSettings) {
-                RemoteSyncSettingsView {
-                    viewModel.syncToRemote()
-                }
-            }
-            .onAppear {
-                viewModel.load()
-            }
-        }
-    }
-
-    private var monthTitle: String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "vi_VN")
-        formatter.dateFormat = "MMMM, yyyy"
-        return formatter.string(from: selectedDay).capitalized
-    }
-}
-
-private struct WeekHeaderView: View {
-    let days: [Date]
-    @Binding var selectedDay: Date
-
-    var body: some View {
-        HStack(spacing: 8) {
-            ForEach(days, id: \.self) { day in
-                DayCapsuleView(
-                    date: day,
-                    isSelected: Calendar.current.isDate(day, inSameDayAs: selectedDay),
-                    isToday: Calendar.current.isDateInToday(day)
-                ) {
-                    selectedDay = day
-                }
-            }
-        }
-        .frame(maxWidth: .infinity)
-    }
-}
-
-private struct DayCapsuleView: View {
-    let date: Date
-    let isSelected: Bool
-    let isToday: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: 7) {
-                Text(weekdayText)
-                    .font(.caption2.weight(.semibold))
-                    .textCase(.uppercase)
-                Text(String(Calendar.current.component(.day, from: date)))
-                    .font(.headline.weight(.semibold))
-            }
-            .foregroundStyle(isSelected ? .white : .primary)
-            .frame(maxWidth: .infinity)
-            .frame(height: 64)
-            .background {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(isSelected ? AnyShapeStyle(AppColors.iconGradient(start: AppColors.primary, end: AppColors.accent)) : AnyShapeStyle(Color(.secondarySystemGroupedBackground)))
-            }
-            .overlay {
-                if isToday && !isSelected {
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(AppColors.accent, lineWidth: 1.5)
-                }
-            }
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(accessibilityText)
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
-    }
-
-    private var weekdayText: String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "vi_VN")
-        formatter.dateFormat = "EEEEE"
-        return formatter.string(from: date)
-    }
-
-    private var accessibilityText: String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "vi_VN")
-        formatter.dateStyle = .full
-        return formatter.string(from: date)
-    }
-}
-
-private struct QuickMetricsView: View {
-    let todayCount: Int
-    let nextEvent: CalendarEvent?
-
-    var body: some View {
-        HStack(spacing: 12) {
-            MetricCardView(title: "Hôm nay", value: "\(todayCount)", detail: "sự kiện", icon: "calendar", tint: AppColors.accent)
-            MetricCardView(title: "Sắp tới", value: nextEvent?.title ?? "Trống", detail: nextEvent.map(timeText) ?? "Chưa có lịch", icon: nextEvent?.category.symbolName ?? "checkmark.circle", tint: nextEvent?.category.color ?? .secondary)
-        }
-    }
-
-    private func timeText(for event: CalendarEvent) -> String {
-        if event.isAllDay { return "Cả ngày" }
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "vi_VN")
-        formatter.timeStyle = .short
-        return formatter.string(from: event.startDate)
-    }
-}
-
-private struct MetricCardView: View {
-    let title: String
-    let value: String
-    let detail: String
-    let icon: String
-    let tint: Color
-
-    var body: some View {
-        HStack(spacing: 10) {
-            Image(systemName: icon)
-                .font(.headline)
-                .foregroundStyle(tint)
-                .frame(width: 32, height: 32)
-                .background(tint.opacity(0.14), in: Circle())
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.caption).foregroundStyle(.secondary)
-                Text(value).font(.subheadline.weight(.semibold)).lineLimit(1)
-                Text(detail).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
-            }
-            Spacer(minLength: 0)
-        }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-    }
-}
-
-private struct TimelineSection: View {
-    let selectedDay: Date
-    let events: [CalendarEvent]
-    let onAdd: () -> Void
-    let onSelect: (CalendarEvent) -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .firstTextBaseline) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(dayTitle).font(.title3.weight(.bold))
-                    Text("\(events.count) sự kiện").font(.caption).foregroundStyle(.secondary)
-                }
-                Spacer()
-                if !events.isEmpty {
-                    Button("Thêm", action: onAdd)
-                        .font(.subheadline.weight(.semibold))
-                }
-            }
-
-            if events.isEmpty {
-                EmptyDayView(onAdd: onAdd)
-            } else {
-                VStack(spacing: 10) {
-                    ForEach(events) { event in
-                        EventCardView(event: event)
-                            .contentShape(Rectangle())
-                            .onTapGesture { onSelect(event) }
+                EventEditorView(event: context.eventToEdit) { savedEvent in
+                    switch context {
+                    case .add:
+                        viewModel.add(savedEvent)
+                    case .edit:
+                        viewModel.update(savedEvent)
                     }
                 }
             }
         }
     }
 
-    private var dayTitle: String {
-        if Calendar.current.isDateInToday(selectedDay) { return "Hôm nay" }
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "vi_VN")
-        formatter.dateFormat = "EEEE, d MMMM"
-        return formatter.string(from: selectedDay).capitalized
-    }
-}
+    // MARK: - Thẻ Hero Thống Kê
+    private var summaryHeroCard: some View {
+        HStack(spacing: 16) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Đồng Bộ Hình Nền")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color(red: 1.0, green: 0.82, blue: 0.35))
 
-private struct EventCardView: View {
-    let event: CalendarEvent
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Text(timeText)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(event.category.color)
-                .multilineTextAlignment(.center)
-                .frame(width: 52)
-
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(alignment: .top, spacing: 8) {
-                    Text(event.title).font(.headline).lineLimit(2)
-                    Spacer(minLength: 0)
-                    Image(systemName: event.category.symbolName).foregroundStyle(event.category.color)
-                }
-                HStack(spacing: 8) {
-                    CapsuleLabel(text: event.category.displayName, symbol: event.category.symbolName, tint: event.category.color)
-                    Text(event.isAllDay ? "Cả ngày" : durationText)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .padding(14)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        }
-    }
-
-    private var timeText: String {
-        if event.isAllDay { return "Cả\nngày" }
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "vi_VN")
-        formatter.timeStyle = .short
-        return formatter.string(from: event.startDate)
-    }
-
-    private var durationText: String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "vi_VN")
-        formatter.timeStyle = .short
-        return "đến \(formatter.string(from: event.endDate))"
-    }
-}
-
-private struct EmptyDayView: View {
-    let onAdd: () -> Void
-
-    var body: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "calendar.badge.plus")
-                .font(.system(size: 30, weight: .medium))
-                .foregroundStyle(AppColors.accent)
-            Text("Không có lịch trình hôm nay")
-                .font(.subheadline.weight(.semibold))
-            Button("Thêm sự kiện", action: onAdd)
-                .font(.subheadline.weight(.semibold))
-                .buttonStyle(.borderedProminent)
-                .tint(AppColors.accent)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 34)
-        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-    }
-}
-
-private struct HeroCardView: View {
-    let totalEvents: Int
-    let nextEvent: CalendarEvent?
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 6) {
-                        Text("Lịch Tuần")
-                        .font(.system(.largeTitle, design: .rounded, weight: .bold))
-                        .foregroundStyle(.primary)
-                        Text("Lịch tuần gọn gàng, dễ xem và đồng bộ widget.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                Spacer()
-
-                ZStack {
-                    RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .fill(AppColors.iconGradient(start: AppColors.primary, end: AppColors.accent))
-                        .frame(width: 84, height: 84)
-
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(.white.opacity(0.12))
-                        .frame(width: 58, height: 58)
-                        .overlay {
-                            Image(systemName: nextEvent?.category.symbolName ?? "calendar")
-                                .foregroundStyle(.white)
-                                .font(.title3.weight(.semibold))
-                        }
-                }
-                .shadow(color: AppColors.accent.opacity(0.18), radius: 18, y: 10)
-                
+                Text("Các sự kiện bạn tạo sẽ tự động xuất hiện dưới dạng chấm màu hoặc danh sách trên hình nền màn hình khóa.")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.white.opacity(0.8))
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
-            HStack(spacing: 10) {
-                StatChip(title: "Sự kiện", value: "\(totalEvents)", icon: "calendar.badge.plus")
-                StatChip(title: "Tiếp theo", value: nextEvent?.category.displayName ?? "Trống", icon: nextEvent?.category.symbolName ?? "circle")
-            }
+            Spacer()
 
-            HStack(spacing: 8) {
-                Label("App + Widget synced", systemImage: "link")
-                Spacer()
-                Text(Date.now, style: .date)
+            VStack(spacing: 2) {
+                Text("\(viewModel.events.count)")
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .foregroundStyle(Color(red: 1.0, green: 0.82, blue: 0.35))
+                Text("Sự kiện")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.7))
             }
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .padding(.top, 2)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(Color.white.opacity(0.08))
+            )
         }
         .padding(16)
         .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(.thinMaterial)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .strokeBorder(
-                    LinearGradient(colors: [AppColors.primary.opacity(0.24), AppColors.accent.opacity(0.16)], startPoint: .topLeading, endPoint: .bottomTrailing),
-                    lineWidth: 1
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(Color(red: 0.14, green: 0.14, blue: 0.18))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
                 )
         )
-        .shadow(color: AppColors.primary.opacity(0.08), radius: 20, y: 8)
-        .padding(.vertical, 4)
     }
-}
 
-private struct StatChip: View {
-    let title: String
-    let value: String
-    let icon: String
-
-    var body: some View {
-        HStack(spacing: 10) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(AppColors.accent.opacity(0.14))
-                    .frame(width: 30, height: 30)
-                Image(systemName: icon)
-                    .foregroundStyle(AppColors.accent)
-                    .font(.caption.weight(.semibold))
+    // MARK: - Phân Loại Tab
+    private var filterSegmentControl: some View {
+        HStack(spacing: 8) {
+            ForEach(EventFilterMode.allCases) { mode in
+                Button {
+                    withAnimation(.spring(response: 0.3)) {
+                        filterMode = mode
+                    }
+                } label: {
+                    Text(mode.rawValue)
+                        .font(.system(size: 12, weight: filterMode == mode ? .bold : .medium))
+                        .padding(.vertical, 6)
+                        .frame(maxWidth: .infinity)
+                        .background(
+                            Capsule()
+                                .fill(filterMode == mode ? Color(red: 1.0, green: 0.82, blue: 0.35) : Color.white.opacity(0.08))
+                        )
+                        .foregroundStyle(filterMode == mode ? Color.black : Color.white.opacity(0.8))
+                }
             }
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                Text(value)
-                    .font(.subheadline.weight(.semibold))
-                    .lineLimit(1)
-            }
-
-            Spacer(minLength: 0)
         }
-        .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color(.secondarySystemBackground).opacity(0.78))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .strokeBorder(.white.opacity(0.08), lineWidth: 1)
-        )
+    }
+
+    // MARK: - Trạng Thái Trống
+    private var emptyStateView: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "calendar.badge.plus")
+                .font(.system(size: 44))
+                .foregroundStyle(Color(red: 1.0, green: 0.82, blue: 0.35).opacity(0.8))
+                .padding(.top, 30)
+
+            Text("Chưa Có Sự Kiện Nào")
+                .font(.system(size: 16, weight: .bold))
+                .foregroundStyle(.white)
+
+            Text("Hãy bấm '+ Thêm Mới' ở góc trên để tạo sự kiện hoặc deadline đầu tiên của bạn nhé!")
+                .font(.system(size: 12))
+                .foregroundStyle(.white.opacity(0.7))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 30)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 40)
     }
 }
 
-private struct EventRow: View {
+/// Thẻ hiển thị một sự kiện trong danh sách.
+struct EventCardRow: View {
     let event: CalendarEvent
+    let onSelect: () -> Void
+    let onDelete: () -> Void
 
     var body: some View {
-        HStack(alignment: .top, spacing: 14) {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(AppColors.gradient(for: event.category))
-                .frame(width: 48, height: 48)
-                .overlay {
-                    Image(systemName: event.category.symbolName)
-                        .foregroundStyle(.white)
-                        .font(.headline.weight(.semibold))
-                }
-
-            VStack(alignment: .leading, spacing: 6) {
-                Text(event.title)
-                    .font(.headline)
-                    .lineLimit(2)
-
-                HStack(spacing: 8) {
-                    CapsuleLabel(text: event.category.displayName, symbol: event.category.symbolName, tint: event.category.color)
-
-                    Text(detailText)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-            }
-
-            Spacer(minLength: 0)
-        }
-        .padding(.vertical, 6)
-        .padding(.horizontal, 2)
-        .listRowInsets(EdgeInsets(top: 10, leading: 12, bottom: 10, trailing: 12))
-        .listRowBackground(Color.clear)
-    }
-
-    private var detailText: String {
-        if event.isAllDay {
-            return "Cả ngày"
-        }
-
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        return "\(formatter.string(from: event.startDate)) - \(formatter.string(from: event.endDate))"
-    }
-}
-
-private struct CapsuleLabel: View {
-    let text: String
-    let symbol: String
-    let tint: Color
-
-    var body: some View {
-        HStack(spacing: 4) {
-            Image(systemName: symbol)
-                .font(.caption2.weight(.semibold))
-            Text(text)
-                .font(.caption2.weight(.semibold))
-        }
-        .foregroundStyle(tint)
-        .padding(.horizontal, 8)
-        .padding(.vertical, 5)
-        .background(
-            Capsule(style: .continuous)
-                .fill(tint.opacity(0.12))
-        )
-    }
-}
-
-private struct EmptyEventsCard: View {
-    let onAdd: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .top, spacing: 12) {
+        Button(action: onSelect) {
+            HStack(spacing: 14) {
+                // Biểu tượng danh mục
                 ZStack {
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(AppColors.iconGradient(start: AppColors.primary, end: AppColors.accent))
-                        .frame(width: 56, height: 56)
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(AppColors.gradient(for: event.category))
+                        .frame(width: 42, height: 42)
 
-                    Image(systemName: "calendar.badge.plus")
+                    Image(systemName: event.category.symbolName)
+                        .font(.system(size: 16, weight: .semibold))
                         .foregroundStyle(.white)
-                        .font(.title3.weight(.semibold))
                 }
 
+                // Chi tiết sự kiện
                 VStack(alignment: .leading, spacing: 4) {
-                        Text("Chưa có sự kiện")
-                        .font(.headline)
-                        Text("Thêm sự kiện đầu tiên để lịch tuần và widget có dữ liệu.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                    Text(event.title)
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+
+                    HStack(spacing: 6) {
+                        Text(event.category.displayName)
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(Color(red: 1.0, green: 0.82, blue: 0.35))
+
+                        Text("•")
+                            .font(.system(size: 10))
+                            .foregroundStyle(.white.opacity(0.4))
+
+                        Text(formatEventTime(event.startDate, isAllDay: event.isAllDay))
+                            .font(.system(size: 11))
+                            .foregroundStyle(.white.opacity(0.7))
+                    }
                 }
-            }
 
-            Button(action: onAdd) {
-                Label("Thêm sự kiện", systemImage: "plus.circle.fill")
-                    .font(.subheadline.weight(.semibold))
-                    .frame(maxWidth: .infinity)
+                Spacer()
+
+                // Nút Xóa
+                Button(action: onDelete) {
+                    Image(systemName: "trash")
+                        .font(.system(size: 13))
+                        .foregroundStyle(.white.opacity(0.4))
+                        .padding(8)
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.borderedProminent)
-            .tint(AppColors.accent)
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color(red: 0.12, green: 0.12, blue: 0.16))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                    )
+            )
         }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(.thinMaterial)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .strokeBorder(AppColors.primary.opacity(0.18), lineWidth: 1)
-        )
-        .listRowInsets(EdgeInsets())
-        .listRowBackground(Color.clear)
+        .buttonStyle(.plain)
+    }
+
+    private func formatEventTime(_ date: Date, isAllDay: Bool) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "vi_VN")
+        if isAllDay {
+            formatter.dateFormat = "d 'tháng' M (Cả ngày)"
+        } else {
+            formatter.dateFormat = "HH:mm, d 'tháng' M"
+        }
+        return formatter.string(from: date)
     }
 }
 
-/// Dòng hiển thị trạng thái đồng bộ gần nhất giữa app và Gist.
-private struct SyncStatusRow: View {
-    let status: SyncStatus
-
-    var body: some View {
-        HStack(spacing: 10) {
-            if case .syncing = status {
-                ProgressView()
-                    .controlSize(.small)
-            } else {
-                Image(systemName: symbolName)
-                    .foregroundStyle(tint)
-            }
-
-            Text(message)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .accessibilityIdentifier("SyncStatusRow")
-    }
-
-    private var symbolName: String {
-        switch status {
-        case .idle:
-            return "clock.arrow.circlepath"
-        case .syncing:
-            return "arrow.triangle.2.circlepath"
-        case .success:
-            return "checkmark.circle.fill"
-        case .failure:
-            return "exclamationmark.triangle.fill"
-        }
-    }
-
-    private var tint: Color {
-        switch status {
-        case .success:
-            return .green
-        case .failure:
-            return .orange
-        default:
-            return .secondary
-        }
-    }
-
-    private var message: String {
-        switch status {
-        case .idle:
-            return RemoteSyncConfig.isConfigured
-                ? "Chưa đồng bộ trong phiên này."
-                : "Chưa cấu hình Gist ID nên widget đang dùng dữ liệu mẫu."
-        case .syncing:
-            return "Đang đồng bộ với Gist..."
-        case .success(let date):
-            let formatter = DateFormatter()
-            formatter.dateStyle = .none
-            formatter.timeStyle = .medium
-            return "Đồng bộ thành công lúc \(formatter.string(from: date))."
-        case .failure(let reason):
-            return "Đồng bộ thất bại: \(reason)"
-        }
-    }
-}
-
-private enum EditorContext: Identifiable {
+// MARK: - Quản Lý Ngữ Cảnh Thêm/Sửa Sự Kiện
+enum EventEditorContext: Identifiable {
     case add
     case edit(CalendarEvent)
 
     var id: String {
         switch self {
-        case .add:
-            return "add"
-        case .edit(let event):
-            return event.id.uuidString
+        case .add: return "add"
+        case .edit(let event): return event.id.uuidString
+        }
+    }
+
+    var eventToEdit: CalendarEvent? {
+        switch self {
+        case .add: return nil
+        case .edit(let event): return event
         }
     }
 }
 
 #Preview {
     ContentView()
+        .preferredColorScheme(.dark)
 }
-

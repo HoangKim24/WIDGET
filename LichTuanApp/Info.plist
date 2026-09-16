@@ -18,5 +18,9 @@
     <string>1.0</string>
     <key>CFBundleVersion</key>
     <string>1</string>
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>Ứng dụng cần quyền lưu hình nền lịch màn hình khóa vào Thư viện ảnh của bạn.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Ứng dụng cần quyền truy cập thư viện để bạn chọn ảnh nền cho lịch.</string>
 </dict>
 </plist>

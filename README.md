@@ -1,81 +1,41 @@
-# Lich Tuan App
+# Lock Screen Calendar Maker (Tạo Hình Nền Lịch Màn Hình Khóa)
 
-WidgetKit app for iPhone weekly calendar, with shared data between the main app and widget extension.
+Ứng dụng thiết kế và xuất hình nền lịch màn hình khóa dành riêng cho iPhone (tối ưu chuẩn tỉ lệ iPhone 15), hỗ trợ tạo hình nền siêu nét, tùy biến đa dạng và lưu thẳng vào Thư viện ảnh trong 1 chạm.
 
-## Project Layout
+---
 
-- `LichTuanApp/` - main app UI and CRUD screens
-- `LichTuanWidget/` - widget extension for Lock Screen and Home Screen
-- `Shared/` - shared models, palette, timeline, and widget views
-- `.github/workflows/build.yml` - GitHub Actions build, UI test, screenshot, and IPA export pipeline
+## 📱 Điểm Nổi Bật
 
-## Local Project Generation
+- **Mô Phỏng Màn Hình Khóa Chân Thực**: Tích hợp mắt xem trước giả lập giao diện iOS (Dynamic Island, Đồng hồ to `09:41`, Ngày tháng, Nút Đèn pin & Camera) giúp căn chỉnh vị trí lịch không bị che khuất.
+- **Kho Nền Thời Thượng**: Tích hợp các tông màu hot trend: *Hoàng Hôn Chill, Cực Quang, Đen Huyền Bí OLED (tiết kiệm pin), Matcha Dịu Êm, Kẹo Ngọt Pastel*.
+- **Tùy Chỉnh Ảnh Cá Nhân**: Chọn ảnh bất kỳ từ máy, tích hợp thanh trượt làm mờ nghệ thuật (Frosted Blur) và lớp phủ tối (Dim Overlay) giúp chữ lịch luôn nổi bật.
+- **3 Kiểu Lịch Tùy Biến**: Lịch tháng tối giản, Lịch tuần năng động và Khung kính mờ sang chảnh (Glassmorphism).
+- **Tích Hợp Quản Lý Sự Kiện**: Dễ dàng thêm việc cần làm, ngày sinh nhật, deadline. Sự kiện tự động đánh dấu chấm màu xinh xắn trên hình nền.
+- **100% Tiếng Việt & Thân Thiện Với Người Non-Tech**: Không thuật ngữ kỹ thuật, không cần tài khoản nhà phát triển trả phí, hoạt động 100% offline.
+- **Xuất Ảnh Chuẩn Retina 3x**: Dùng `ImageRenderer` render hình nền sắc nét độ phân giải cao và lưu vào Photos.
 
-This repo uses XcodeGen.
+---
 
-```bash
-xcodegen generate
-```
+## 📂 Cấu Trúc Thư Mục
 
-That generates `LichTuanApp.xcodeproj` from `project.yml`.
+- `LichTuanApp/`
+  - `Studio/`:
+    - `LockScreenStudioView.swift`: Màn hình Studio chính với thanh công cụ điều khiển nổi
+    - `WallpaperCanvasView.swift`: Canvas render toàn bộ hình nền theo tỉ lệ iPhone 15
+    - `CalendarOverlayViews.swift`: Lưới lịch tháng, lịch tuần và kính mờ
+    - `LockScreenMockOverlay.swift`: Lớp phủ mô phỏng màn hình khóa iOS 17/18
+    - `WallpaperModels.swift`: Các cấu hình hình nền, preset và bảng màu
+    - `WallpaperSaveManager.swift`: Xử lý kết xuất ảnh siêu nét và lưu vào Album ảnh
+  - `RootView.swift`: Điều hướng 2 Tab chính (Thiết Kế & Sự Kiện)
+  - `EventEditorView.swift`: Màn hình tạo và chỉnh sửa sự kiện
+  - `EventListViewModel.swift`: Quản lý dữ liệu sự kiện cục bộ trên máy
+  - `Info.plist`: Đã cấu hình quyền truy cập và lưu ảnh vào Photo Library
+- `Shared/`: Model sự kiện (`CalendarEvent`), danh mục (`EventCategory`), bộ lưu trữ (`SharedDataStore`)
+- `.github/workflows/build.yml`: CI tự động biên dịch và đóng gói file `.ipa`
 
-## Xem Và Sửa UI
+---
 
-Đây là dự án iOS SwiftUI, vì vậy cần **macOS + Xcode** để chạy app và xem giao diện trực tiếp.
-VS Code trên Windows chỉ phù hợp để sửa mã nguồn; không thể mở `#Preview`, iOS Simulator hoặc build WidgetKit tại chỗ.
+## 🚀 Hướng Dẫn Cài Lên iPhone 15
 
-### Cách xem UI trên Mac
-
-1. Cài Xcode và XcodeGen (`brew install xcodegen`), sau đó chạy `xcodegen generate` trong thư mục repo.
-2. Mở `LichTuanApp.xcodeproj` bằng Xcode.
-3. Chọn scheme `LichTuanApp`, chọn một iPhone Simulator, rồi bấm **Run**.
-4. Mở các file SwiftUI như `LichTuanApp/RootView.swift`, `LichTuanApp/EventEditorView.swift` hoặc `LichTuanApp/Views/WidgetPreviewHostView.swift` để dùng canvas **Preview**.
-5. Muốn xem màn hình widget tập trung, chọn scheme `LichTuanApp`, thêm launch argument `UITEST_WIDGET_PREVIEW` trong scheme **Edit Scheme > Run > Arguments**, rồi chạy app. Màn hình `Widget Preview Host` sẽ hiển thị các family widget và bảng màu.
-
-Nếu chỉ có Windows, hãy push code lên GitHub để workflow macOS build và chạy UI test. Ảnh UI được lấy từ artifact `widget-screenshots` trong phần **Actions**; muốn chỉnh tiếp thì sửa SwiftUI trên Windows, push lại, rồi tải artifact mới.
-
-## CI Flow
-
-The GitHub Actions workflow does the following:
-
-1. Build the app in Debug mode.
-2. Run UI tests on an iPhone simulator.
-3. Extract screenshots from the `.xcresult` bundle with `xcparse`.
-4. Upload screenshots as the `widget-screenshots` artifact.
-5. On pushes to `main`, archive and export an `.ipa`.
-
-## Required Secret for IPA Export
-
-Không cần secret `APPLE_TEAM_ID` cho flow hiện tại, vì archive job được giữ ở chế độ unsigned và IPA được đóng gói thủ công từ archive.
-Nếu sau này muốn quay lại flow signed/automatic signing, lúc đó mới cần thêm Team ID và cấu hình provisioning tương ứng.
-
-## Widget Data Sync (no App Group)
-
-Apple ID miễn phí không được cấp capability `App Groups`, nên app và widget không dùng chung container cục bộ được. Thay vào đó:
-
-- App chính lưu sự kiện trong `UserDefaults.standard` của riêng nó (`Shared/SharedDataStore.swift`).
-- Sau mỗi thay đổi, app đẩy JSON lên một GitHub Gist bằng token cá nhân (`Shared/GistSyncClient.swift`).
-- Widget tải Gist đó về bằng lời gọi công khai, không cần token, và cache lại trong `Application Support` của chính nó (`Shared/EventCache.swift`).
-
-Cấu hình trước khi build:
-
-1. Tạo một **secret Gist** với file tên `lichtuan-events.json`, nội dung khởi tạo là `[]`.
-2. Chép Gist ID vào `RemoteSyncConfig.gistID` trong `Shared/RemoteSyncConfig.swift`.
-3. Tạo GitHub token chỉ có scope `gist`, nhập trong app tại mục **Widget Sync → Cấu hình GitHub token**.
-
-Token không nằm trong mã nguồn, chỉ lưu trên máy chạy app. Nếu `gistID` để rỗng, widget vẫn chạy nhưng hiển thị dữ liệu mẫu.
-
-## Notes
-
-- The widget and app share data through a GitHub Gist instead of an App Group.
-- Lock Screen widget families stay monochrome and use only a small accentable symbol.
-- `systemLarge` and the main app use the full color palette.
-
-## Build And Archive Risks
-
-- Unsigned IPA chỉ là đóng gói từ archive, không phải flow ký code đầy đủ.
-- Không còn entitlement nào, nên ký bằng Apple ID miễn phí không vướng capability. Đổi lại, dữ liệu widget phụ thuộc vào mạng và Gist.
-- `xcodegen generate` depends on the runner environment. If `project.yml` is invalid or the XcodeGen version changes, CI can fail even when the Swift code is fine.
-- UI test không nên khóa vào một tên simulator cụ thể vì danh sách device thay đổi theo phiên bản Xcode; workflow tự chọn iPhone Simulator đầu tiên đang available.
-- `WeekTimelineProvider` falls back to cache rồi tới dữ liệu mẫu khi không gọi được Gist. Widget vẫn hiển thị nhưng có thể không phải dữ liệu mới nhất.
-- Widget chỉ làm mới theo lịch của WidgetKit, nên sự kiện vừa thêm có thể mất vài phút mới xuất hiện.
+Xem hướng dẫn chi tiết từng bước (kèm hình minh họa và cách dùng Sideloadly trên Windows) tại:
+👉 [LICHTUAN_IPHONE_INSTALL.md](file:///d:/Widget/LICHTUAN_IPHONE_INSTALL.md)
