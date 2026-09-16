@@ -95,26 +95,26 @@ enum WallpaperPreset: String, CaseIterable, Identifiable {
     }
 }
 
-// MARK: - Bố Cục Lịch
+// MARK: - Bố Cục Lịch Tuần 7 Ngày
 enum CalendarLayoutType: String, CaseIterable, Identifiable {
-    case monthly = "monthly"
-    case weekly = "weekly"
+    case rows = "rows"
+    case columns = "columns"
     case frostedCard = "frosted"
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
-        case .monthly: return "Lịch Tháng"
-        case .weekly: return "Lịch Tuần"
+        case .rows: return "7 Dòng Chi Tiết"
+        case .columns: return "7 Cột Tối Giản"
         case .frostedCard: return "Kính Mờ"
         }
     }
 
     var iconName: String {
         switch self {
-        case .monthly: return "calendar"
-        case .weekly: return "list.bullet.rectangle"
+        case .rows: return "list.bullet.rectangle"
+        case .columns: return "rectangle.split.3x1"
         case .frostedCard: return "square.stack.3d.up.fill"
         }
     }
@@ -179,7 +179,7 @@ enum AccentColorTheme: String, CaseIterable, Identifiable {
 // MARK: - Cấu Hình Toàn Bộ Hình Nền
 struct WallpaperConfig: Equatable {
     var preset: WallpaperPreset = .sunset
-    var layoutType: CalendarLayoutType = .monthly
+    var layoutType: CalendarLayoutType = .rows
     var position: CalendarPosition = .top
     var accentColor: AccentColorTheme = .gold
     var dimOpacity: Double = 0.25

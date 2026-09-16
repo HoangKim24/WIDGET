@@ -40,19 +40,19 @@ struct WallpaperCanvasView: View {
 
                     Group {
                         switch config.layoutType {
-                        case .monthly:
-                            MonthlyGridCalendarView(
+                        case .rows:
+                            WeeklyScheduleView(
                                 events: events,
                                 accentColor: config.accentColor.color,
                                 isGlassCard: false
                             )
-                        case .weekly:
-                            WeeklyScheduleView(
+                        case .columns:
+                            WeeklyColumnsView(
                                 events: events,
                                 accentColor: config.accentColor.color
                             )
                         case .frostedCard:
-                            MonthlyGridCalendarView(
+                            WeeklyScheduleView(
                                 events: events,
                                 accentColor: config.accentColor.color,
                                 isGlassCard: true
