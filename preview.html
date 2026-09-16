@@ -428,70 +428,246 @@
       z-index: 999;
     }
 
-    /* CONTROL PANEL OUTSIDE PHONE */
+    /* BẢNG LƯỚI TUẦN & XẾP LỊCH TRÌNH (WEEKLY GRID SCHEDULER PANEL) */
     .editor-panel-outside {
       margin-top: 24px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 24px;
-      padding: 16px 20px;
+      background: rgba(28, 30, 38, 0.9);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 26px;
+      padding: 20px;
       width: var(--phone-w);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .panel-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-reset-sample {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #d1d1d6;
+      border-radius: 99px;
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-reset-sample:hover { background: rgba(255, 255, 255, 0.15); color: #fff; }
+
+    /* 7 Day Tabs */
+    .day-tabs-row {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      background: rgba(0, 0, 0, 0.35);
+      padding: 4px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .day-tab-btn {
+      background: transparent;
+      border: none;
+      border-radius: 8px;
+      padding: 6px 2px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      cursor: pointer;
+      color: rgba(255, 255, 255, 0.7);
+      transition: all 0.2s;
+    }
+
+    .day-tab-btn .day-tab-name { font-size: 10px; font-weight: 700; }
+    .day-tab-btn .day-tab-num { font-size: 13px; font-weight: 800; color: #fff; }
+
+    .day-tab-btn.active {
+      background: rgba(47, 148, 255, 0.25);
+      border: 1px solid var(--accent-blue);
+      color: var(--accent-blue);
+    }
+    .day-tab-btn.active .day-tab-num { color: var(--accent-blue); }
+
+    /* Input Card */
+    .schedule-form-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 14px;
       display: flex;
       flex-direction: column;
       gap: 12px;
     }
 
-    .editor-title {
-      font-size: 13px;
-      font-weight: 800;
-      color: var(--accent-blue);
-      display: flex;
-      align-items: center;
-      gap: 6px;
+    .form-group-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.6);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
-    .edit-grid {
-      display: grid;
-      grid-template-columns: 90px 1fr 60px;
+    .input-task-title {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      outline: none;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .input-task-title:focus { border-color: var(--accent-blue); }
+
+    .time-picker-row {
+      display: flex;
+      align-items: center;
       gap: 8px;
     }
 
-    .input-style {
+    .time-input-box {
+      flex: 1;
       background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 8px;
-      padding: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 10px;
+      padding: 8px 10px;
       color: #fff;
-      font-size: 12px;
-      font-family: inherit;
+      font-size: 13px;
+      font-family: monospace;
+      font-weight: 700;
       outline: none;
+      text-align: center;
+      color-scheme: dark;
     }
 
-    .btn-add-item {
-      background: var(--accent-blue);
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      font-weight: 800;
-      font-size: 12px;
+    .time-arrow { color: rgba(255, 255, 255, 0.4); font-weight: 800; }
+
+    .preset-hours-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .preset-chip {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 99px;
+      padding: 4px 8px;
+      font-size: 10.5px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.85);
       cursor: pointer;
     }
+    .preset-chip:hover { background: rgba(47, 148, 255, 0.3); border-color: var(--accent-blue); color: #fff; }
 
-    .btn-download-wp {
-      background: linear-gradient(135deg, #2f94ff, #00cec9);
-      color: #000;
+    .color-picker-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .color-circle {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: transform 0.15s;
+    }
+    .color-circle.selected {
+      border-color: #ffffff;
+      transform: scale(1.2);
+    }
+
+    .btn-slot-submit {
+      background: var(--accent-blue);
+      color: #ffffff;
       border: none;
+      border-radius: 12px;
       padding: 12px;
-      border-radius: 99px;
+      font-size: 13.5px;
       font-weight: 800;
-      font-size: 13px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
-      box-shadow: 0 4px 18px rgba(47, 148, 255, 0.4);
+      gap: 8px;
+      transition: opacity 0.2s;
     }
+    .btn-slot-submit:hover { opacity: 0.9; }
+
+    /* Scheduled Slots list */
+    .slots-list-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .slot-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 8px 12px;
+    }
+
+    .slot-item-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .slot-color-bar {
+      width: 4px;
+      height: 28px;
+      border-radius: 2px;
+    }
+
+    .slot-time-text {
+      font-family: monospace;
+      font-size: 12px;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .slot-title-text {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .btn-del-slot {
+      background: transparent;
+      border: none;
+      color: #ff7675;
+      font-size: 14px;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+    .btn-del-slot:hover { background: rgba(255, 118, 117, 0.2); }
   </style>
 </head>
 <body>
@@ -544,7 +720,7 @@
         
         <!-- COMPONENT 1: BẢNG TUẦN 7 CỘT (Mon - Sun) -->
         <div class="week-matrix-card">
-          <div class="week-matrix-grid">
+          <div class="week-matrix-grid" id="weekMatrixGrid">
             
             <!-- Mon 2 -->
             <div class="matrix-col">
@@ -730,43 +906,258 @@
 
   </div>
 
-  <!-- Quick Edit Panel Outside -->
+  <!-- BẢNG LƯỚI TUẦN & XẾP LỊCH TRÌNH 7 NGÀY (TRỰC TIẾP NHƯ TRONG APP) -->
   <div class="editor-panel-outside">
-    <div class="editor-title">✍️ Thêm lịch trình vào mục Today:</div>
-    <div class="edit-grid">
-      <input type="text" class="input-style" id="newTime" value="18:30–20:00" placeholder="VD: 18:30-20:00">
-      <input type="text" class="input-style" id="newTask" placeholder="Nội dung việc...">
-      <button class="btn-add-item" onclick="addNewItem()">+ Thêm</button>
+    <div class="panel-header">
+      <div class="panel-title">
+        <span>📅</span> Bảng Xếp Lịch Tuần (Thứ 2 – CN)
+      </div>
+      <button class="btn-reset-sample" onclick="resetToSample()">Nạp lại mẫu</button>
     </div>
 
-    <button class="btn-download-wp" onclick="alert('Đã cập nhật lịch trình thành công! Bạn có thể xuất hình nền để cài vào màn hình khóa.')">
-      <span>💾</span> Cập Nhật Hình Nền Màn Hình Khóa
+    <!-- 7 Day Tabs -->
+    <div class="day-tabs-row" id="dayTabsContainer">
+      <!-- Generated by JS -->
+    </div>
+
+    <!-- Schedule Input Card -->
+    <div class="schedule-form-card">
+      <div class="form-group-label" id="formDayHeading">XẾP VIỆC VÀO THỨ 3 (NGÀY 3)</div>
+      
+      <input type="text" class="input-task-title" id="inputTaskTitle" placeholder="Tên việc (VD: Đi làm, Họp team, Tập gym...)">
+
+      <div class="form-group-label">KHUNG GIỜ CỤ THỂ</div>
+      <div class="time-picker-row">
+        <input type="time" class="time-input-box" id="inputStartTime" value="07:00">
+        <span class="time-arrow">➔</span>
+        <input type="time" class="time-input-box" id="inputEndTime" value="10:00">
+      </div>
+
+      <!-- Quick Preset Chips -->
+      <div class="preset-hours-row">
+        <button type="button" class="preset-chip" onclick="setQuickTime('07:00', '10:00')">07:00–10:00</button>
+        <button type="button" class="preset-chip" onclick="setQuickTime('12:00', '13:00')">12:00–13:00</button>
+        <button type="button" class="preset-chip" onclick="setQuickTime('13:30', '14:00')">13:30–14:00</button>
+        <button type="button" class="preset-chip" onclick="setQuickTime('16:30', '17:00')">16:30–17:00</button>
+      </div>
+
+      <div class="form-group-label">MÀU SẮC Ô LỊCH</div>
+      <div class="color-picker-row" id="colorPickerRow">
+        <div class="color-circle bg-blue selected" onclick="selectColor('bg-blue', this)"></div>
+        <div class="color-circle bg-cyan" onclick="selectColor('bg-cyan', this)"></div>
+        <div class="color-circle bg-yellow" onclick="selectColor('bg-yellow', this)"></div>
+        <div class="color-circle bg-red" onclick="selectColor('bg-red', this)"></div>
+        <div class="color-circle bg-pink" onclick="selectColor('bg-pink', this)"></div>
+        <div class="color-circle bg-purple" onclick="selectColor('bg-purple', this)"></div>
+      </div>
+
+      <button class="btn-slot-submit" onclick="addSlotToSchedule()">
+        <span>➕</span> Xếp Lịch Trình Vào Bảng
+      </button>
+    </div>
+
+    <!-- Scheduled Slots in Selected Day -->
+    <div class="panel-title" style="font-size: 13px;">
+      <span>📋</span> Lịch Trình Đã Xếp Ngày Này:
+    </div>
+    <div class="slots-list-container" id="daySlotsList">
+      <!-- Generated by JS -->
+    </div>
+
+    <button class="btn-download-wp" onclick="alert('Bảng lịch tuần đã được xếp hoàn tất và tự động đồng bộ lên hình nền màn hình khóa!')">
+      <span>✨</span> Xuất Hình Nền Màn Hình Khóa
     </button>
   </div>
 
   <script>
-    const colors = ['#2f94ff', '#48cae4', '#f9ca24', '#eb4d4b', '#a29bfe', '#55efc4'];
-    let colorIdx = 0;
+    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const dayLabels = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ Nhật'];
+    const dayDates = [2, 3, 4, 5, 6, 7, 8];
 
-    function addNewItem() {
-      const time = document.getElementById('newTime').value.trim();
-      const task = document.getElementById('newTask').value.trim();
-      if (!task) return alert('Vui lòng nhập tên công việc!');
+    let activeDayIndex = 1; // Default to Tue (3)
+    let selectedColor = 'bg-blue';
 
-      const list = document.getElementById('todayScheduleList');
-      const row = document.createElement('div');
-      row.className = 'agenda-row';
-      const c = colors[colorIdx % colors.length];
-      colorIdx++;
+    const defaultSchedule = {
+      0: [
+        { time: '08:00–10:00', title: 'Do exe', color: 'bg-pink' },
+        { time: '10:00–10:20', title: 'Relax', color: 'bg-cyan' }
+      ],
+      1: [
+        { time: '05:30–10:00', title: 'Gym', color: 'bg-blue' },
+        { time: '12:00–13:00', title: 'Lunch', color: 'bg-cyan' },
+        { time: '13:30–14:00', title: 'Meetings', color: 'bg-yellow' },
+        { time: '16:30–17:00', title: 'KPIs', color: 'bg-red' }
+      ],
+      2: [
+        { time: '10:30–17:00', title: 'Review KPIs', color: 'bg-red' }
+      ],
+      3: [
+        { time: '13:30–14:00', title: 'Meetings', color: 'bg-yellow' },
+        { time: '16:30–17:00', title: 'KPIs', color: 'bg-red' }
+      ],
+      4: [
+        { time: '14:00–15:00', title: 'Shopee', color: 'bg-pink' },
+        { time: '16:30–17:00', title: 'KPIs', color: 'bg-red' }
+      ],
+      5: [
+        { time: '13:30–14:00', title: 'Meetings', color: 'bg-yellow' },
+        { time: '16:30–17:00', title: 'KPIs', color: 'bg-red' }
+      ],
+      6: [
+        { time: 'All day', title: '8/3', color: 'bg-blue' },
+        { time: '16:30–17:00', title: 'KPIs', color: 'bg-red' }
+      ]
+    };
 
-      row.innerHTML = `
-        <div class="agenda-time">${time}</div>
-        <div class="agenda-task" style="color: ${c};">${task}</div>
-      `;
-      list.appendChild(row);
+    let schedule = JSON.parse(JSON.stringify(defaultSchedule));
 
-      document.getElementById('newTask').value = '';
+    function initApp() {
+      renderDayTabs();
+      renderMatrix();
+      renderTodayAgenda();
+      renderDayEditor();
     }
+
+    function renderDayTabs() {
+      const container = document.getElementById('dayTabsContainer');
+      container.innerHTML = dayNames.map((name, idx) => `
+        <button type="button" class="day-tab-btn ${idx === activeDayIndex ? 'active' : ''}" onclick="selectDay(${idx})">
+          <span class="day-tab-name">${name}</span>
+          <span class="day-tab-num">${dayDates[idx]}</span>
+        </button>
+      `).join('');
+    }
+
+    function selectDay(idx) {
+      activeDayIndex = idx;
+      renderDayTabs();
+      renderDayEditor();
+      renderMatrix();
+    }
+
+    function renderMatrix() {
+      const grid = document.getElementById('weekMatrixGrid');
+      grid.innerHTML = dayNames.map((name, idx) => {
+        const items = schedule[idx] || [];
+        const isActive = idx === activeDayIndex;
+        return `
+          <div class="matrix-col ${isActive ? 'active' : ''}" onclick="selectDay(${idx})" style="cursor: pointer;">
+            <div class="col-header">
+              <div class="col-day-title" style="${isActive ? 'color: var(--accent-blue);' : ''}">${name}</div>
+              <div class="col-day-number" style="${isActive ? 'color: var(--accent-blue);' : ''}">${dayDates[idx]}</div>
+            </div>
+            <div class="col-blocks-container">
+              ${items.slice(0, 4).map(item => `
+                <div class="mini-event-block ${item.color}">
+                  <span class="mini-time">${item.time}</span>
+                  <span class="mini-title">${item.title}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderTodayAgenda() {
+      const list = document.getElementById('todayScheduleList');
+      const items = schedule[1] || []; // Tuesday is Today
+      const colorMap = {
+        'bg-blue': 'var(--accent-blue)',
+        'bg-cyan': 'var(--accent-cyan)',
+        'bg-yellow': 'var(--accent-yellow)',
+        'bg-red': 'var(--accent-red)',
+        'bg-pink': '#e84393',
+        'bg-purple': '#a29bfe'
+      };
+      list.innerHTML = items.map(item => `
+        <div class="agenda-row">
+          <div class="agenda-time">${item.time}</div>
+          <div class="agenda-task" style="color: ${colorMap[item.color] || '#fff'};">${item.title}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderDayEditor() {
+      document.getElementById('formDayHeading').innerText = `XẾP VIỆC VÀO ${dayLabels[activeDayIndex].toUpperCase()} (${dayNames[activeDayIndex]} ${dayDates[activeDayIndex]})`;
+      const container = document.getElementById('daySlotsList');
+      const items = schedule[activeDayIndex] || [];
+      if (items.length === 0) {
+        container.innerHTML = `<div style="color: rgba(255,255,255,0.4); font-size: 12px; text-align: center; padding: 12px;">Chưa có lịch trình cho ngày này. Hãy điền khung giờ phía trên!</div>`;
+        return;
+      }
+      const colorHex = {
+        'bg-blue': '#0984e3',
+        'bg-cyan': '#00cec9',
+        'bg-yellow': '#fdcb6e',
+        'bg-red': '#ff7675',
+        'bg-pink': '#e84393',
+        'bg-purple': '#6c5ce7'
+      };
+      container.innerHTML = items.map((item, idx) => `
+        <div class="slot-item">
+          <div class="slot-item-left">
+            <div class="slot-color-bar" style="background: ${colorHex[item.color] || '#fff'};"></div>
+            <div>
+              <div class="slot-time-text">${item.time}</div>
+              <div class="slot-title-text" style="color: ${colorHex[item.color] || '#fff'};">${item.title}</div>
+            </div>
+          </div>
+          <button class="btn-del-slot" onclick="deleteSlot(${idx})" title="Xóa ô này">🗑️</button>
+        </div>
+      `).join('');
+    }
+
+    function setQuickTime(start, end) {
+      document.getElementById('inputStartTime').value = start;
+      document.getElementById('inputEndTime').value = end;
+    }
+
+    function selectColor(colorClass, el) {
+      selectedColor = colorClass;
+      document.querySelectorAll('.color-circle').forEach(c => c.classList.remove('selected'));
+      el.classList.add('selected');
+    }
+
+    function addSlotToSchedule() {
+      const title = document.getElementById('inputTaskTitle').value.trim();
+      if (!title) {
+        alert('Vui lòng nhập tên công việc!');
+        return;
+      }
+      const start = document.getElementById('inputStartTime').value;
+      const end = document.getElementById('inputEndTime').value;
+      const timeStr = `${start}–${end}`;
+
+      if (!schedule[activeDayIndex]) schedule[activeDayIndex] = [];
+      schedule[activeDayIndex].push({
+        time: timeStr,
+        title: title,
+        color: selectedColor
+      });
+
+      document.getElementById('inputTaskTitle').value = '';
+      renderMatrix();
+      if (activeDayIndex === 1) renderTodayAgenda();
+      renderDayEditor();
+    }
+
+    function deleteSlot(slotIdx) {
+      if (!schedule[activeDayIndex]) return;
+      schedule[activeDayIndex].splice(slotIdx, 1);
+      renderMatrix();
+      if (activeDayIndex === 1) renderTodayAgenda();
+      renderDayEditor();
+    }
+
+    function resetToSample() {
+      schedule = JSON.parse(JSON.stringify(defaultSchedule));
+      renderMatrix();
+      renderTodayAgenda();
+      renderDayEditor();
+    }
+
+    window.addEventListener('DOMContentLoaded', initApp);
   </script>
 </body>
 </html>
