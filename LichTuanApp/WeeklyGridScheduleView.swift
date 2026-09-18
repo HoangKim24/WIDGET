@@ -91,23 +91,6 @@ struct WeeklyGridScheduleView: View {
             .navigationTitle("Bảng Lịch Tuần")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        showImportSheet = true
-                    } label: {
-                        HStack(spacing: 5) {
-                            Image(systemName: "doc.on.clipboard.fill")
-                            Text("Dán Lịch Zalo")
-                                .font(.system(size: 11, weight: .bold))
-                        }
-                        .padding(.horizontal, 9)
-                        .padding(.vertical, 5)
-                        .background(Color(red: 0.18, green: 0.58, blue: 1.0).opacity(0.22))
-                        .foregroundStyle(Color(red: 0.28, green: 0.70, blue: 1.0))
-                        .clipShape(Capsule())
-                    }
-                }
-
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
                         Button {

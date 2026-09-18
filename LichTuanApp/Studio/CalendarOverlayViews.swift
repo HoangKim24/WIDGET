@@ -154,24 +154,24 @@ struct DailyAgendaAndWeekScheduleView: View {
 
     // MARK: - BỐ CỤC 3: KÍNH MỜ SANG CHẢNH (Frosted Glassmorphism Card)
     private var frostedCardLayoutView: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 12) {
             // Header thẻ kính
             HStack {
-                HStack(spacing: 6) {
+                HStack(spacing: 5) {
                     Circle()
                         .fill(accent)
-                        .frame(width: 8, height: 8)
+                        .frame(width: 7, height: 7)
                     Text("AGENDA & WEEK")
-                        .font(.system(size: 11, weight: .bold))
+                        .font(.system(size: 10, weight: .bold))
                         .foregroundStyle(accent)
-                        .tracking(1)
+                        .tracking(0.8)
                 }
 
                 Spacer()
 
                 Text("Hôm nay: \(vietnameseShortDay(for: Date()))")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.7))
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.75))
             }
             .padding(.bottom, 2)
 
@@ -179,7 +179,8 @@ struct DailyAgendaAndWeekScheduleView: View {
             todayAgendaSection
             remindersSection
         }
-        .padding(16)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 14)
         .background(
             RoundedRectangle(cornerRadius: 22, style: .continuous)
                 .fill(Color(red: 0.12, green: 0.13, blue: 0.18).opacity(0.75))
@@ -205,7 +206,7 @@ struct DailyAgendaAndWeekScheduleView: View {
 
     // MARK: - Component: Bảng 7 Cột Tuần
     private var weekMatrixCard: some View {
-        HStack(alignment: .top, spacing: 3) {
+        HStack(alignment: .top, spacing: 2.5) {
             ForEach(currentWeekDays, id: \.self) { day in
                 let isToday = calendar.isDateInToday(day)
                 let dayNum = calendar.component(.day, from: day)
@@ -216,10 +217,10 @@ struct DailyAgendaAndWeekScheduleView: View {
                     // Header của cột (Thứ + Ngày)
                     VStack(spacing: 1) {
                         Text(dayName)
-                            .font(.system(size: 9, weight: .bold))
+                            .font(.system(size: 8.5, weight: .bold))
                             .foregroundStyle(isToday ? accent : .white.opacity(0.75))
                         Text("\(dayNum)")
-                            .font(.system(size: 11, weight: .heavy, design: .rounded))
+                            .font(.system(size: 10.5, weight: .heavy, design: .rounded))
                             .foregroundStyle(isToday ? accent : .white)
                     }
                     .padding(.bottom, 2)

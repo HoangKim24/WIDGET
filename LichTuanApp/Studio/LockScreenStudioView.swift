@@ -167,6 +167,14 @@ struct LockScreenStudioView: View {
                     RoundedRectangle(cornerRadius: 34, style: .continuous)
                         .stroke(Color.white.opacity(0.15), lineWidth: 1.5)
                 )
+
+                // Giả lập màn hình khóa iOS (Đồng hồ, Ngày tháng, Dynamic Island) giúp căn chỉnh chính xác 100%
+                mockLockScreenOverlay
+                    .frame(width: 393, height: 852)
+                    .scaleEffect(scaleRatio)
+                    .frame(width: targetWidth, height: targetHeight)
+                    .clipShape(RoundedRectangle(cornerRadius: 34, style: .continuous))
+                    .allowsHitTesting(false)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         }
@@ -367,12 +375,12 @@ struct LockScreenStudioView: View {
                 }
             }
 
-            // Thanh trượt tinh chỉnh Y
+            // Thanh trượt tinh chỉnh Y (hạ thấp hoặc nâng cao)
             HStack {
                 Text("Căn chỉnh:")
                     .font(.system(size: 11))
                     .foregroundStyle(.white.opacity(0.6))
-                Slider(value: $config.fineTuneYOffset, in: -40...40, step: 2)
+                Slider(value: $config.fineTuneYOffset, in: -40...100, step: 2)
                     .tint(config.effectiveAccentColor)
             }
             .padding(.horizontal, 4)
@@ -569,5 +577,76 @@ struct LockScreenStudioView: View {
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(.white)
         }
+    }
+
+    // MARK: - Giả Lập Màn Hình Khóa iOS (Đồng Hồ, Dynamic Island, Đèn Pin/Camera)
+    private var mockLockScreenOverlay: some View {
+        VStack(spacing: 0) {
+            // Dynamic Island
+            Capsule()
+                .fill(Color.black)
+                .frame(width: 108, height: 30)
+                .padding(.top, 14)
+
+            // Dòng Thứ, Ngày tháng chuẩn iOS
+            Text(vietnameseLockScreenDate(Date()))
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.88))
+                .shadow(color: .black.opacity(0.4), radius: 4)
+                .padding(.top, 14)
+
+            // Đồng hồ to bản chuẩn iOS
+            Text(mockClockTime)
+                .font(.system(size: 78, weight: .bold, design: .rounded))
+                .foregroundStyle(.white.opacity(0.92))
+                .shadow(color: .black.opacity(0.45), radius: 8)
+                .padding(.top, -8)
+
+            Spacer()
+
+            // Các nút đáy màn hình khóa (Đèn pin & Camera)
+            HStack {
+                Circle()
+                    .fill(Color.black.opacity(0.35))
+                    .frame(width: 48, height: 48)
+                    .overlay(
+                        Image(systemName: "flashlight.on.fill")
+                            .font(.system(size: 18))
+                            .foregroundStyle(.white)
+                    )
+
+                Spacer()
+
+                Circle()
+                    .fill(Color.black.opacity(0.35))
+                    .frame(width: 48, height: 48)
+                    .overlay(
+                        Image(systemName: "camera.fill")
+                            .font(.system(size: 18))
+                            .foregroundStyle(.white)
+                    )
+            }
+            .padding(.horizontal, 36)
+            .padding(.bottom, 24)
+
+            // Thanh gạt Home Indicator
+            Capsule()
+                .fill(Color.white.opacity(0.7))
+                .frame(width: 138, height: 4.5)
+                .padding(.bottom, 8)
+        }
+    }
+
+    private var mockClockTime: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        return formatter.string(from: Date())
+    }
+
+    private func vietnameseLockScreenDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "vi_VN")
+        formatter.dateFormat = "EEEE, d 'thg' M"
+        return formatter.string(from: date).capitalized
     }
 }

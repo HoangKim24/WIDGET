@@ -9,20 +9,20 @@ struct WallpaperCanvasView: View {
 
     private func calculateTopPadding(totalHeight h: CGFloat) -> CGFloat {
         // iPhone 15 native height: 852pt
-        // Đồng hồ & Widgets iOS kết thúc ở ~265pt (tỷ lệ 0.311)
-        // Vùng an toàn vẽ lịch: 270pt đến 735pt
+        // Khoảng cách an toàn tránh đè đồng hồ (kể cả khi iOS tự zoom nhẹ hình nền):
+        // Vùng an toàn vẽ lịch: ~310pt đến 730pt
         let baseRatio: CGFloat
         switch config.position {
         case .top:
-            baseRatio = 0.317 // ~270pt trên 852pt (ngay dưới widget tiện ích)
+            baseRatio = 0.365 // ~311pt trên 852pt (cách xa đáy đồng hồ 13:19 và widget)
         case .center:
-            baseRatio = 0.395 // ~336pt trên 852pt (chính giữa vùng an toàn)
+            baseRatio = 0.435 // ~370pt trên 852pt (chính giữa vùng an toàn)
         case .bottom:
-            baseRatio = 0.485 // ~413pt trên 852pt (nằm ở nửa dưới nhưng cách xa đèn pin)
+            baseRatio = 0.510 // ~435pt trên 852pt (nằm ở nửa dưới màn hình)
         }
         let calculated = h * baseRatio + config.fineTuneYOffset
-        let minTop = h * 0.312
-        let maxTop = h * 0.58
+        let minTop = h * 0.33
+        let maxTop = h * 0.65
         return max(minTop, min(calculated, maxTop))
     }
 
@@ -60,7 +60,7 @@ struct WallpaperCanvasView: View {
                         .frame(height: topPadding)
 
                     DailyAgendaAndWeekScheduleView(events: events, config: config)
-                        .padding(.horizontal, 18)
+                        .padding(.horizontal, 24)
                         .frame(maxHeight: maxContentHeight, alignment: .top)
 
                     Spacer()
