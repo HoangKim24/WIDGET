@@ -14,9 +14,15 @@ struct UpdateCalendarWallpaperIntent: AppIntent {
         let events = SharedDataStore.shared.loadEvents()
         let customImage = WallpaperConfig.loadCustomImage()
 
-        // Tự động nhận diện chuẩn xác tỉ lệ và độ phân giải của dòng iPhone hiện tại
-        let targetSize = UIScreen.main.bounds.size
-        let targetScale = UIScreen.main.scale > 0 ? UIScreen.main.scale : 3.0
+        // Tự động nhận diện chuẩn xác tỉ lệ và độ phân giải, có fallback an toàn khi chạy ngầm
+        var targetSize = UIScreen.main.bounds.size
+        if targetSize.width <= 0 || targetSize.height <= 0 {
+            targetSize = CGSize(width: 393, height: 852)
+        }
+        var targetScale = UIScreen.main.scale
+        if targetScale <= 0 {
+            targetScale = 3.0
+        }
 
         let renderView = WallpaperCanvasView(
             config: config,
@@ -33,8 +39,13 @@ struct UpdateCalendarWallpaperIntent: AppIntent {
             throw IntentError.renderFailed
         }
 
+        // Ghi file vật lý vào thư mục tạm để Shortcuts và lệnh 'Đặt hình nền' luôn tìm thấy file 100%
+        let tempDir = FileManager.default.temporaryDirectory
+        let fileURL = tempDir.appendingPathComponent("LichTuan_LockScreen.png")
+        try pngData.write(to: fileURL, options: .atomic)
+
         let file = IntentFile(
-            data: pngData,
+            fileURL: fileURL,
             filename: "LichTuan_LockScreen.png",
             type: .png
         )
