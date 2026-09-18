@@ -137,7 +137,7 @@ struct WeeklyGridScheduleView: View {
                         Button {
                             showImportSheet = true
                         } label: {
-                            Label("Dán Lịch Từ Zalo / Ghi Chú", systemImage: "doc.on.clipboard")
+                            Label("Dán Lịch nhanh ", systemImage: "doc.on.clipboard")
                         }
 
                         Button {
@@ -344,15 +344,16 @@ struct WeeklyGridScheduleView: View {
                             VStack(spacing: 2) {
                                 if !dayEvents.isEmpty {
                                     ForEach(dayEvents.prefix(3)) { ev in
-                                        RoundedRectangle(cornerRadius: 3)
+                                        RoundedRectangle(cornerRadius: 3.5)
                                             .fill(eventColor(for: ev.category))
-                                            .frame(height: 12)
+                                            .frame(minHeight: 14)
                                             .overlay(
                                                 Text(ev.title)
                                                     .font(.system(size: 6.5, weight: .bold))
                                                     .foregroundStyle(isLightColor(ev.category) ? Color.black : Color.white)
-                                                    .lineLimit(1)
-                                                    .padding(.horizontal, 1)
+                                                    .lineLimit(2)
+                                                    .multilineTextAlignment(.center)
+                                                    .padding(.horizontal, 1.5)
                                             )
                                     }
                                     if dayEvents.count > 3 {
@@ -655,23 +656,27 @@ struct WeeklyGridScheduleView: View {
                                 .foregroundStyle(.white.opacity(0.9))
                                 .frame(width: 95, alignment: .leading)
 
-                            // Tên công việc + Icon lặp lại & nhắc nhở
-                            HStack(spacing: 6) {
+                            // Tên công việc + Icon lặp lại & nhắc nhở (Cho phép xuống dòng tròn chữ)
+                            HStack(alignment: .top, spacing: 6) {
                                 Text(event.title)
                                     .font(.system(size: 14, weight: .semibold))
                                     .foregroundStyle(eventColor(for: event.category))
-                                    .lineLimit(1)
+                                    .lineLimit(nil)
+                                    .multilineTextAlignment(.leading)
+                                    .fixedSize(horizontal: false, vertical: true)
 
                                 if event.isRecurringWeekly {
                                     Image(systemName: "repeat")
                                         .font(.system(size: 11, weight: .bold))
                                         .foregroundStyle(Color(red: 0.28, green: 0.70, blue: 1.0))
+                                        .padding(.top, 2)
                                 }
 
                                 if event.hasReminder {
                                     Image(systemName: "bell.fill")
                                         .font(.system(size: 11, weight: .bold))
                                         .foregroundStyle(Color.yellow)
+                                        .padding(.top, 2)
                                 }
                             }
 

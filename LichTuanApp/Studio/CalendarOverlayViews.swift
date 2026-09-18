@@ -99,25 +99,30 @@ struct DailyAgendaAndWeekScheduleView: View {
                         )
                         .frame(width: 58, alignment: .leading)
 
-                        // Các ô việc theo hàng ngang
+                        // Các ô việc theo hàng ngang (Cho phép xuống dòng tròn chữ, bỏ ScrollView để ImageRenderer vẽ chuẩn xác 100%)
                         if !dayEvs.isEmpty {
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 4) {
-                                    ForEach(dayEvs.prefix(3)) { ev in
-                                        HStack(spacing: 3) {
-                                            Text(formatTimeRange(ev))
-                                                .font(.system(size: 8, weight: .bold, design: .monospaced))
-                                                .opacity(0.85)
-                                            Text(ev.title)
-                                                .font(.system(size: 8.5, weight: .semibold))
-                                                .lineLimit(1)
-                                        }
-                                        .padding(.horizontal, 6)
-                                        .padding(.vertical, 3)
-                                        .background(eventColor(for: ev.category))
-                                        .foregroundStyle(isLightColor(ev.category) ? Color.black : Color.white)
-                                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                            HStack(spacing: 5) {
+                                ForEach(dayEvs.prefix(2)) { ev in
+                                    HStack(alignment: .center, spacing: 4) {
+                                        Text(formatShortTime(ev))
+                                            .font(.system(size: 8, weight: .bold, design: .monospaced))
+                                            .opacity(0.9)
+                                        Text(ev.title)
+                                            .font(.system(size: 9, weight: .semibold))
+                                            .lineLimit(2)
+                                            .multilineTextAlignment(.leading)
+                                            .fixedSize(horizontal: false, vertical: true)
                                     }
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 3)
+                                    .background(eventColor(for: ev.category))
+                                    .foregroundStyle(isLightColor(ev.category) ? Color.black : Color.white)
+                                    .clipShape(RoundedRectangle(cornerRadius: 4.5))
+                                }
+                                if dayEvs.count > 2 {
+                                    Text("+\(dayEvs.count - 2)")
+                                        .font(.system(size: 8, weight: .bold))
+                                        .foregroundStyle(.white.opacity(0.6))
                                 }
                             }
                         } else {
@@ -232,26 +237,24 @@ struct DailyAgendaAndWeekScheduleView: View {
                         alignment: .bottom
                     )
 
-                    // Các khối màu sự kiện trong cột
+                    // Các khối màu sự kiện trong cột (Hỗ trợ xuống dòng để tròn chữ)
                     VStack(spacing: 2.5) {
                         if !dayEvents.isEmpty {
                             ForEach(dayEvents.prefix(4)) { event in
                                 VStack(spacing: 0.5) {
-                                    Text(formatShortTime(event))
-                                        .font(.system(size: 6, weight: .bold))
-                                        .lineLimit(1)
-                                        .minimumScaleFactor(0.7)
                                     Text(event.title)
-                                        .font(.system(size: 6.5, weight: .heavy))
-                                        .lineLimit(1)
-                                        .minimumScaleFactor(0.7)
+                                        .font(.system(size: 7, weight: .heavy))
+                                        .lineLimit(2)
+                                        .multilineTextAlignment(.center)
+                                        .minimumScaleFactor(0.75)
+                                        .fixedSize(horizontal: false, vertical: true)
                                 }
                                 .padding(.horizontal, 1.5)
-                                .padding(.vertical, 2)
+                                .padding(.vertical, 2.5)
                                 .frame(maxWidth: .infinity)
                                 .background(eventColor(for: event.category))
                                 .foregroundStyle(isLightColor(event.category) ? Color.black : Color.white)
-                                .clipShape(RoundedRectangle(cornerRadius: 3))
+                                .clipShape(RoundedRectangle(cornerRadius: 3.5))
                             }
                         } else {
                             Color.clear.frame(height: 44)
@@ -282,24 +285,32 @@ struct DailyAgendaAndWeekScheduleView: View {
                     .font(.system(size: 15, weight: .heavy, design: .rounded))
                     .foregroundStyle(accent)
 
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 5) {
                     ForEach(todayEvents.prefix(3)) { event in
-                        HStack(spacing: 10) {
+                        HStack(alignment: .top, spacing: 8) {
                             Text(formatTimeRange(event))
                                 .font(.system(size: 11, weight: .bold, design: .monospaced))
                                 .foregroundStyle(.white)
-                                .frame(width: 88, alignment: .leading)
+                                .frame(width: 84, alignment: .leading)
+                                .padding(.top, 1)
 
-                            Text(event.title)
-                                .font(.system(size: 12.5, weight: .bold))
-                                .foregroundStyle(eventColor(for: event.category))
-                                .lineLimit(1)
+                            HStack(alignment: .top, spacing: 4) {
+                                Text(event.title)
+                                    .font(.system(size: 12.5, weight: .bold))
+                                    .foregroundStyle(eventColor(for: event.category))
+                                    .lineLimit(2)
+                                    .multilineTextAlignment(.leading)
+                                    .fixedSize(horizontal: false, vertical: true)
 
-                            if event.hasReminder {
-                                Image(systemName: "bell.fill")
-                                    .font(.system(size: 9))
-                                    .foregroundStyle(Color.yellow)
+                                if event.hasReminder {
+                                    Image(systemName: "bell.fill")
+                                        .font(.system(size: 9))
+                                        .foregroundStyle(Color.yellow)
+                                        .padding(.top, 2)
+                                }
                             }
+
+                            Spacer(minLength: 0)
                         }
                     }
                 }
@@ -332,19 +343,25 @@ struct DailyAgendaAndWeekScheduleView: View {
                         .foregroundStyle(Color(red: 0.95, green: 0.61, blue: 0.07))
                 }
 
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 3) {
                     ForEach(reminderEvents.prefix(4)) { event in
-                        HStack(spacing: 6) {
+                        HStack(alignment: .top, spacing: 6) {
                             Circle()
                                 .fill(Color(red: 0.95, green: 0.61, blue: 0.07))
                                 .frame(width: 4, height: 4)
+                                .padding(.top, 6)
+
                             Text(event.title)
-                                .font(.system(size: 13, weight: .semibold))
+                                .font(.system(size: 12.5, weight: .semibold))
                                 .foregroundStyle(.white)
-                                .lineLimit(1)
+                                .lineLimit(2)
+                                .multilineTextAlignment(.leading)
+                                .fixedSize(horizontal: false, vertical: true)
+
                             Text("(\(formatShortTime(event)))")
                                 .font(.system(size: 11))
                                 .foregroundStyle(.white.opacity(0.6))
+                                .padding(.top, 1)
                         }
                     }
                 }
