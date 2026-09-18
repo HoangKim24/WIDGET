@@ -135,12 +135,6 @@ struct WeeklyGridScheduleView: View {
                             Label("Dán Lịch nhanh ", systemImage: "doc.on.clipboard")
                         }
 
-                        Button {
-                            viewModel.loadSampleEvents()
-                        } label: {
-                            Label("Nạp Lịch Mẫu Tiếng Việt", systemImage: "sparkles")
-                        }
-
                         Button(role: .destructive) {
                             NotificationManager.shared.cancelAllNotifications()
                             viewModel.clearAll()

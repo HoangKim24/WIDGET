@@ -10,32 +10,37 @@ final class EventListViewModel: ObservableObject {
 
     init(store: SharedDataStore = .shared) {
         self.store = store
+        purgeSampleSeedEvents()
         load()
+    }
+
+    /// Tự động dọn sạch các dữ liệu mẫu cũ trên máy của người dùng khi nâng cấp app
+    private func purgeSampleSeedEvents() {
+        let sampleTitles: Set<String> = [
+            "Họp Giao Ban Đầu Tuần",
+            "Xử Lý Dự Án Mới",
+            "Chạy Bộ & Gym",
+            "Gặp Khách Hàng",
+            "Học Tiếng Anh",
+            "Báo Cáo Tiến Độ Tuần",
+            "Đào Tạo Nội Bộ",
+            "Hoàn Thành Deadline Tuần",
+            "Đi Siêu Thị Mua Sắm",
+            "Cà Phê Cùng Bạn Bè",
+            "Dọn Dẹp & Nấu Ăn",
+            "Tập Yoga Thư Giãn",
+            "Ăn Tối Cùng Gia Đình"
+        ]
+        let existing = store.loadEvents()
+        let filtered = existing.filter { !sampleTitles.contains($0.title) }
+        if filtered.count != existing.count {
+            store.save(events: filtered)
+        }
     }
 
     func load() {
         let loaded = store.loadEvents()
-        if loaded.isEmpty {
-            // Tự động nạp bộ lịch mẫu Tiếng Việt chuẩn chỉnh nếu máy chưa có sự kiện nào
-            let samples = SharedEventSeed.sampleEvents
-            for ev in samples {
-                store.add(event: ev)
-            }
-            events = samples.sorted { $0.startDate < $1.startDate }
-            return
-        }
         events = loaded.sorted { $0.startDate < $1.startDate }
-    }
-
-    /// Khôi phục hoặc nạp nhanh bộ lịch mẫu Tiếng Việt để test thử giao diện
-    func loadSampleEvents() {
-        NotificationManager.shared.cancelAllNotifications()
-        store.clearAllEvents()
-        let samples = SharedEventSeed.sampleEvents
-        for ev in samples {
-            store.add(event: ev)
-        }
-        load()
     }
 
     func add(_ event: CalendarEvent) {
