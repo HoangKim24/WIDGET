@@ -233,15 +233,21 @@ struct DailyAgendaAndWeekScheduleView: View {
                         if !dayEvents.isEmpty {
                             ForEach(dayEvents.prefix(4)) { event in
                                 VStack(spacing: 0.5) {
+                                    Text(formatShortTime(event))
+                                        .font(.system(size: 6, weight: .bold, design: .monospaced))
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.7)
+                                        .opacity(0.95)
+
                                     Text(event.title)
-                                        .font(.system(size: 7, weight: .heavy))
+                                        .font(.system(size: 6.5, weight: .heavy))
                                         .lineLimit(2)
                                         .multilineTextAlignment(.center)
                                         .minimumScaleFactor(0.75)
                                         .fixedSize(horizontal: false, vertical: true)
                                 }
                                 .padding(.horizontal, 1.5)
-                                .padding(.vertical, 2.5)
+                                .padding(.vertical, 2)
                                 .frame(maxWidth: .infinity)
                                 .background(eventColor(for: event.category))
                                 .foregroundStyle(isLightColor(event.category) ? Color.black : Color.white)

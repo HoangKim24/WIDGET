@@ -337,14 +337,23 @@ struct WeeklyGridScheduleView: View {
                                     ForEach(dayEvents.prefix(3)) { ev in
                                         RoundedRectangle(cornerRadius: 3.5)
                                             .fill(eventColor(for: ev.category))
-                                            .frame(minHeight: 14)
+                                            .frame(minHeight: 20)
                                             .overlay(
-                                                Text(ev.title)
-                                                    .font(.system(size: 6.5, weight: .bold))
-                                                    .foregroundStyle(isLightColor(ev.category) ? Color.black : Color.white)
-                                                    .lineLimit(2)
-                                                    .multilineTextAlignment(.center)
-                                                    .padding(.horizontal, 1.5)
+                                                VStack(spacing: 0.5) {
+                                                    Text(formatTimeRange(ev))
+                                                        .font(.system(size: 5.5, weight: .bold, design: .monospaced))
+                                                        .foregroundStyle(isLightColor(ev.category) ? Color.black.opacity(0.85) : Color.white.opacity(0.9))
+                                                        .lineLimit(1)
+                                                        .minimumScaleFactor(0.7)
+
+                                                    Text(ev.title)
+                                                        .font(.system(size: 6.5, weight: .bold))
+                                                        .foregroundStyle(isLightColor(ev.category) ? Color.black : Color.white)
+                                                        .lineLimit(2)
+                                                        .multilineTextAlignment(.center)
+                                                }
+                                                .padding(.horizontal, 1.5)
+                                                .padding(.vertical, 1.5)
                                             )
                                     }
                                     if dayEvents.count > 3 {
