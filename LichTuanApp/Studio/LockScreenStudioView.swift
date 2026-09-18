@@ -228,40 +228,67 @@ struct LockScreenStudioView: View {
             .frame(minHeight: 90, maxHeight: 110)
             .padding(.horizontal, 14)
 
-            // Nút Lưu Hình Nền To Bản
-            Button {
-                saveManager.saveWallpaper(
-                    config: config,
-                    events: viewModel.events,
-                    customImage: customLoadedImage
-                )
-            } label: {
-                HStack(spacing: 8) {
-                    if saveManager.isSaving {
-                        ProgressView()
-                            .tint(.black)
-                    } else {
-                        Image(systemName: "arrow.down.to.line.circle.fill")
-                            .font(.system(size: 18, weight: .bold))
+            // Các nút hành động: Cập Nhật (Qua Phím Tắt) & Lưu Vào Ảnh
+            HStack(spacing: 10) {
+                // Nút Cập Nhật: Bấm phát tự động kích hoạt Phím Tắt đổi màn hình khóa ngay
+                Button {
+                    triggerShortcutsUpdate()
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "bolt.fill")
+                            .font(.system(size: 15, weight: .bold))
+                        Text("Cập Nhật")
+                            .font(.system(size: 14, weight: .bold, design: .rounded))
                     }
-
-                    Text(saveManager.isSaving ? "Đang xuất ảnh siêu nét..." : "Lưu Hình Nền Màn Hình Khóa")
-                        .font(.system(size: 14, weight: .bold, design: .rounded))
-                }
-                .foregroundStyle(Color.black)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 13)
-                .background(
-                    LinearGradient(
-                        colors: [config.effectiveAccentColor, config.effectiveAccentColor.opacity(0.85)],
-                        startPoint: .leading,
-                        endPoint: .trailing
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 13)
+                    .background(
+                        LinearGradient(
+                            colors: [Color(red: 0.18, green: 0.58, blue: 1.0), Color(red: 0.42, green: 0.36, blue: 0.91)],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
                     )
-                )
-                .clipShape(Capsule())
-                .shadow(color: config.effectiveAccentColor.opacity(0.4), radius: 10, y: 4)
+                    .clipShape(Capsule())
+                    .shadow(color: Color.blue.opacity(0.4), radius: 8, y: 3)
+                }
+
+                // Nút Lưu Vào Ảnh (Thủ công)
+                Button {
+                    saveManager.saveWallpaper(
+                        config: config,
+                        events: viewModel.events,
+                        customImage: customLoadedImage
+                    )
+                } label: {
+                    HStack(spacing: 6) {
+                        if saveManager.isSaving {
+                            ProgressView()
+                                .tint(.black)
+                        } else {
+                            Image(systemName: "arrow.down.to.line.circle.fill")
+                                .font(.system(size: 16, weight: .bold))
+                        }
+
+                        Text(saveManager.isSaving ? "Đang lưu..." : "Lưu Vào Ảnh")
+                            .font(.system(size: 13, weight: .bold, design: .rounded))
+                    }
+                    .foregroundStyle(Color.black)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 13)
+                    .background(
+                        LinearGradient(
+                            colors: [config.effectiveAccentColor, config.effectiveAccentColor.opacity(0.85)],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .clipShape(Capsule())
+                    .shadow(color: config.effectiveAccentColor.opacity(0.4), radius: 8, y: 3)
+                }
+                .disabled(saveManager.isSaving)
             }
-            .disabled(saveManager.isSaving)
             .padding(.horizontal, 14)
             .padding(.top, 2)
         }
@@ -678,5 +705,27 @@ struct LockScreenStudioView: View {
         formatter.locale = Locale(identifier: "vi_VN")
         formatter.dateFormat = "EEEE, d 'thg' M"
         return formatter.string(from: date).capitalized
+    }
+
+    // MARK: - Kích Hoạt Phím Tắt Tự Động Đổi Màn Hình Khóa
+    private func triggerShortcutsUpdate() {
+        config.save()
+        if let customImage = customLoadedImage {
+            WallpaperConfig.saveCustomImage(customImage)
+        }
+
+        let shortcutName = "Cập Nhật Lịch Tuần"
+        guard let encoded = shortcutName.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else { return }
+
+        // shortcuts://run-shortcut?name=... sẽ tự động kích hoạt và chạy phím tắt ngay lập tức 100%
+        if let runUrl = URL(string: "shortcuts://run-shortcut?name=\(encoded)") {
+            UIApplication.shared.open(runUrl) { success in
+                if !success {
+                    if let fallback = URL(string: "shortcuts://") {
+                        UIApplication.shared.open(fallback)
+                    }
+                }
+            }
+        }
     }
 }

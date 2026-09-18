@@ -55,14 +55,14 @@ struct AutoWallpaperSetupGuideView: View {
 
                         guideStepRow(
                             number: "2",
-                            title: "Tạo Tự Động Hóa (Automation)",
-                            description: "Vào tab 'Tự động hóa' ở giữa đáy màn hình > Bấm dấu '+' > Chọn 'Thời gian trong ngày' (ví dụ: 06:00 sáng) > Chọn 'Chạy ngay lập tức' (Run Immediately)."
+                            title: "Tạo Phím Tắt 'Cập Nhật Lịch Tuần'",
+                            description: "Vào tab Phím tắt > Bấm '+' > Thêm tác vụ 'Cập Nhật Hình Nền Lịch Tuần' > Thêm tác vụ 'Đặt hình nền' (Màn hình khóa) > Đổi tên phím tắt thành: Cập Nhật Lịch Tuần."
                         )
 
                         guideStepRow(
                             number: "3",
-                            title: "Chọn tác vụ Đổi Hình Nền Lịch",
-                            description: "Tìm kiếm tác vụ 'Cập Nhật Hình Nền Lịch Tuần' từ ứng dụng này > Nối vào lệnh 'Đặt hình nền' (Set Wallpaper) của màn hình khóa."
+                            title: "Bấm 'Cập Nhật' Trong App Là Đổi Ngay",
+                            description: "Bất cứ lúc nào bấm nút 'Cập Nhật' trong app này, máy sẽ tự động chạy phím tắt và đổi màn hình khóa ngay lập tức! Bạn cũng có thể gắn phím tắt này vào tab Tự Động Hóa 00:01 để đổi mỗi đêm."
                         )
                     }
                     .padding(16)

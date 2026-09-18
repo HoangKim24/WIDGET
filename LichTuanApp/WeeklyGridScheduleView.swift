@@ -94,6 +94,12 @@ struct WeeklyGridScheduleView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
                         Button {
+                            triggerShortcutsUpdate()
+                        } label: {
+                            Label("Cập Nhật Màn Hình Khóa Ngay", systemImage: "bolt.fill")
+                        }
+
+                        Button {
                             showAutoGuide = true
                         } label: {
                             Label("Cài Đặt Tự Động Hóa", systemImage: "bolt.badge.automatic")
@@ -660,5 +666,19 @@ struct WeeklyGridScheduleView: View {
 
     private func isLightColor(_ category: EventCategory) -> Bool {
         return category == .study || category == .health
+    }
+
+    private func triggerShortcutsUpdate() {
+        let shortcutName = "Cập Nhật Lịch Tuần"
+        guard let encoded = shortcutName.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else { return }
+        if let runUrl = URL(string: "shortcuts://run-shortcut?name=\(encoded)") {
+            UIApplication.shared.open(runUrl) { success in
+                if !success {
+                    if let fallback = URL(string: "shortcuts://") {
+                        UIApplication.shared.open(fallback)
+                    }
+                }
+            }
+        }
     }
 }
