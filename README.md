@@ -7,10 +7,11 @@
 ## 📱 Điểm Nổi Bật
 
 - **Tự Động Hóa Màn Hình Khóa (Auto Wallpaper)**: Tích hợp sâu với iOS Shortcuts (Phím Tắt) & AppIntents, giúp iPhone tự động đổi hình nền lịch mỗi ngày (hoặc mỗi khi đóng app) mà không cần thao tác thủ công.
-- **Tối Ưu Chuẩn Toàn Màn Hình iPhone 15**: Hỗ trợ native full-screen 19.5:9 (393 × 852 pt), ôm trọn viền Dynamic Island và đáy máy, không còn dải đen letterbox.
-- **Bảng Tuần 7 Cột & Khung Giờ Chi Tiết**: Xếp lịch trực quan từ Thứ 2 đến Chủ Nhật với màu sắc riêng cho từng công việc.
-- **Dữ Liệu Thật 100%**: Hoạt động hoàn toàn trên sự kiện của người dùng, không chèn dữ liệu mẫu giả.
-- **Kho Nền Thời Thượng**: Tích hợp các tông màu hot trend: *Hoàng Hôn Chill, Cực Quang, Đen Huyền Bí OLED (tiết kiệm pin), Matcha Dịu Êm, Kẹo Ngọt Pastel*.
+- **Tối Ưu Chuẩn Toàn Màn Hình iPhone**: Khung an toàn cách xa đồng hồ và Dynamic Island, căn lề chuẩn 100% không bị zoom cắt mép.
+- **Giả Lập Màn Hình Khóa Trực Tiếp (Mock Clock Preview)**: Xem trước giao diện màn hình khóa chuẩn iOS (Đồng hồ, Ngày tháng, Dynamic Island) ngay trong Studio trước khi bấm lưu.
+- **Bảng Màu Thịnh Hành Color Hunt & Tùy Biến HEX**: Hỗ trợ dán mã màu HEX tùy ý và các bộ màu thịnh hành.
+- **Dán Lịch Thông Minh Từ Zalo / Ghi Chú**: Tự động nhận diện T2-CN, mốc giờ và công việc để nạp nhanh cả tuần.
+- **Nhắc Nhở Công Việc Thông Minh (Local Notifications)**: Hẹn giờ nhắc nhở trước sự kiện.
 - **Xuất Ảnh Chuẩn Retina 3x**: Dùng `ImageRenderer` render hình nền sắc nét độ phân giải cao (1179 × 2556 px) và lưu vào Photos.
 
 ---
