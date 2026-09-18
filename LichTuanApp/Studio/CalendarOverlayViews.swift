@@ -19,19 +19,10 @@ struct DailyAgendaAndWeekScheduleView: View {
         return (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: monday) }
     }
 
-    /// Lấy danh sách sự kiện cho một ngày (hỗ trợ cả sự kiện lặp lại hàng tuần)
+    /// Lấy danh sách sự kiện cho một ngày (hỗ trợ cả sự kiện lặp lại hàng tuần và khóa dừng lặp)
     private func events(for day: Date) -> [CalendarEvent] {
-        let dayWeekday = calendar.component(.weekday, from: day)
-        return events.filter { ev in
-            if calendar.isDate(ev.startDate, inSameDayAs: day) {
-                return true
-            }
-            if ev.isRecurringWeekly {
-                let evWeekday = calendar.component(.weekday, from: ev.startDate)
-                return evWeekday == dayWeekday
-            }
-            return false
-        }.sorted { $0.startDate < $1.startDate }
+        return events.filter { $0.occurs(on: day, calendar: calendar) }
+            .sorted { $0.startDate < $1.startDate }
     }
 
     /// Sự kiện hôm nay

@@ -9,6 +9,7 @@ struct CalendarEvent: Identifiable, Codable, Equatable {
     var category: EventCategory
     var isAllDay: Bool
     var isRecurringWeekly: Bool
+    var recurrenceEndDate: Date? // Khóa ngày dừng lặp (nếu có)
     var hasReminder: Bool
 
     init(
@@ -19,6 +20,7 @@ struct CalendarEvent: Identifiable, Codable, Equatable {
         category: EventCategory = .other,
         isAllDay: Bool = false,
         isRecurringWeekly: Bool = false,
+        recurrenceEndDate: Date? = nil,
         hasReminder: Bool = false
     ) {
         self.id = id
@@ -28,6 +30,7 @@ struct CalendarEvent: Identifiable, Codable, Equatable {
         self.category = category
         self.isAllDay = isAllDay
         self.isRecurringWeekly = isRecurringWeekly
+        self.recurrenceEndDate = recurrenceEndDate
         self.hasReminder = hasReminder
     }
 
@@ -39,6 +42,7 @@ struct CalendarEvent: Identifiable, Codable, Equatable {
         case category
         case isAllDay
         case isRecurringWeekly
+        case recurrenceEndDate
         case hasReminder
     }
 
@@ -51,6 +55,32 @@ struct CalendarEvent: Identifiable, Codable, Equatable {
         category = try container.decodeIfPresent(EventCategory.self, forKey: .category) ?? .other
         isAllDay = try container.decode(Bool.self, forKey: .isAllDay)
         isRecurringWeekly = try container.decodeIfPresent(Bool.self, forKey: .isRecurringWeekly) ?? false
+        recurrenceEndDate = try container.decodeIfPresent(Date.self, forKey: .recurrenceEndDate)
         hasReminder = try container.decodeIfPresent(Bool.self, forKey: .hasReminder) ?? false
+    }
+
+    /// Kiểm tra xem sự kiện có diễn ra vào ngày `targetDate` hay không (tính cả lặp lại hàng tuần và khóa giới hạn lặp)
+    func occurs(on targetDate: Date, calendar: Calendar = .current) -> Bool {
+        if calendar.isDate(startDate, inSameDayAs: targetDate) {
+            return true
+        }
+        guard isRecurringWeekly else { return false }
+
+        // Không diễn ra trước ngày bắt đầu
+        if targetDate < calendar.startOfDay(for: startDate) {
+            return false
+        }
+
+        // Khóa lặp: Nếu có ngày kết thúc lặp và targetDate vượt quá ngày đó thì dừng
+        if let recurrenceEndDate = recurrenceEndDate {
+            let endOfDay = calendar.date(bySettingHour: 23, minute: 59, second: 59, of: recurrenceEndDate) ?? recurrenceEndDate
+            if targetDate > endOfDay {
+                return false
+            }
+        }
+
+        let targetWeekday = calendar.component(.weekday, from: targetDate)
+        let startWeekday = calendar.component(.weekday, from: startDate)
+        return targetWeekday == startWeekday
     }
 }

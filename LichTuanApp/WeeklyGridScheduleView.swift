@@ -18,6 +18,8 @@ struct WeeklyGridScheduleView: View {
     @State private var selectedCategory: EventCategory = .work
     @State private var isAllDay: Bool = false
     @State private var isRecurringWeekly: Bool = false
+    @State private var hasRecurrenceLimit: Bool = false
+    @State private var recurrenceEndDate: Date = Calendar.current.date(byAdding: .month, value: 1, to: Date()) ?? Date()
     @State private var hasReminder: Bool = false
     @State private var showResetAlert = false
     @State private var showAutoGuide = false
@@ -55,17 +57,10 @@ struct WeeklyGridScheduleView: View {
         return "\(fmt.string(from: first)) – \(fmt.string(from: last))/\(yearFmt.string(from: last))"
     }
 
-    // Sự kiện thuộc ngày đang chọn (bao gồm cả sự kiện lặp lại hàng tuần vào thứ này)
+    // Sự kiện thuộc ngày đang chọn (bao gồm cả sự kiện lặp lại hàng tuần và kiểm tra khóa lặp)
     private var eventsForSelectedDate: [CalendarEvent] {
-        let selWeekday = calendar.component(.weekday, from: selectedDate)
         return viewModel.events
-            .filter { ev in
-                if calendar.isDate(ev.startDate, inSameDayAs: selectedDate) { return true }
-                if ev.isRecurringWeekly {
-                    return calendar.component(.weekday, from: ev.startDate) == selWeekday
-                }
-                return false
-            }
+            .filter { $0.occurs(on: selectedDate, calendar: calendar) }
             .sorted { $0.startDate < $1.startDate }
     }
 
@@ -305,13 +300,9 @@ struct WeeklyGridScheduleView: View {
                     let isSelected = calendar.isDate(day, inSameDayAs: selectedDate)
                     let isToday = calendar.isDateInToday(day)
                     let dayWeekday = calendar.component(.weekday, from: day)
-                    let dayEvents = viewModel.events.filter { ev in
-                        if calendar.isDate(ev.startDate, inSameDayAs: day) { return true }
-                        if ev.isRecurringWeekly {
-                            return calendar.component(.weekday, from: ev.startDate) == dayWeekday
-                        }
-                        return false
-                    }.sorted { $0.startDate < $1.startDate }
+                    let dayEvents = viewModel.events
+                        .filter { $0.occurs(on: day, calendar: calendar) }
+                        .sorted { $0.startDate < $1.startDate }
                     let dayNum = calendar.component(.day, from: day)
                     let shortName = vietnameseWeekdayShort(day)
 
@@ -554,6 +545,55 @@ struct WeeklyGridScheduleView: View {
                 }
                 .tint(Color(red: 0.18, green: 0.58, blue: 1.0))
 
+                // Tùy chọn: Khóa dừng lặp (Tránh lặp vô hạn)
+                if isRecurringWeekly {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Toggle(isOn: $hasRecurrenceLimit) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "lock.shield.fill")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(hasRecurrenceLimit ? Color.orange : .white.opacity(0.4))
+                                Text("Khóa ngày dừng lặp (Tránh lặp vô hạn)")
+                                    .font(.system(size: 11.5, weight: .medium))
+                                    .foregroundStyle(.white.opacity(0.85))
+                            }
+                        }
+                        .tint(Color.orange)
+
+                        if hasRecurrenceLimit {
+                            VStack(spacing: 8) {
+                                HStack {
+                                    Text("Dừng lặp sau ngày:")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.white.opacity(0.6))
+                                    Spacer()
+                                    DatePicker(
+                                        "",
+                                        selection: $recurrenceEndDate,
+                                        in: selectedDate...,
+                                        displayedComponents: .date
+                                    )
+                                    .labelsHidden()
+                                    .colorScheme(.dark)
+                                }
+
+                                // Phím tắt chọn nhanh thời hạn lặp
+                                HStack(spacing: 5) {
+                                    quickRecurrenceLimitButton(title: "2 tuần", weeks: 2)
+                                    quickRecurrenceLimitButton(title: "4 tuần (1 tháng)", weeks: 4)
+                                    quickRecurrenceLimitButton(title: "8 tuần (2 tháng)", weeks: 8)
+                                    quickRecurrenceLimitButton(title: "16 tuần", weeks: 16)
+                                }
+                            }
+                            .padding(8)
+                            .background(Color.white.opacity(0.04))
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                        }
+                    }
+                    .padding(.leading, 12)
+                    .padding(.top, 2)
+                }
+
                 Divider().background(Color.white.opacity(0.08))
 
                 Toggle(isOn: $hasReminder) {
@@ -666,10 +706,21 @@ struct WeeklyGridScheduleView: View {
                                     .fixedSize(horizontal: false, vertical: true)
 
                                 if event.isRecurringWeekly {
-                                    Image(systemName: "repeat")
-                                        .font(.system(size: 11, weight: .bold))
-                                        .foregroundStyle(Color(red: 0.28, green: 0.70, blue: 1.0))
-                                        .padding(.top, 2)
+                                    HStack(spacing: 3) {
+                                        Image(systemName: "repeat")
+                                            .font(.system(size: 11, weight: .bold))
+                                        if let limit = event.recurrenceEndDate {
+                                            HStack(spacing: 2) {
+                                                Image(systemName: "lock.fill")
+                                                    .font(.system(size: 8))
+                                                Text("đến \(vietnameseDateShort(limit))")
+                                                    .font(.system(size: 10, weight: .medium))
+                                            }
+                                            .foregroundStyle(Color.orange.opacity(0.9))
+                                        }
+                                    }
+                                    .foregroundStyle(Color(red: 0.28, green: 0.70, blue: 1.0))
+                                    .padding(.top, 2)
                                 }
 
                                 if event.hasReminder {
@@ -762,6 +813,7 @@ struct WeeklyGridScheduleView: View {
             category: selectedCategory,
             isAllDay: isAllDay,
             isRecurringWeekly: isRecurringWeekly,
+            recurrenceEndDate: (isRecurringWeekly && hasRecurrenceLimit) ? recurrenceEndDate : nil,
             hasReminder: hasReminder
         )
 
@@ -816,6 +868,28 @@ struct WeeklyGridScheduleView: View {
 
     private func isLightColor(_ category: EventCategory) -> Bool {
         return category == .study || category == .health
+    }
+
+    private func vietnameseDateShort(_ date: Date) -> String {
+        let fmt = DateFormatter()
+        fmt.dateFormat = "dd/MM"
+        return fmt.string(from: date)
+    }
+
+    private func quickRecurrenceLimitButton(title: String, weeks: Int) -> some View {
+        Button {
+            if let newEnd = calendar.date(byAdding: .day, value: weeks * 7, to: selectedDate) {
+                recurrenceEndDate = newEnd
+            }
+        } label: {
+            Text(title)
+                .font(.system(size: 9.5, weight: .semibold))
+                .padding(.horizontal, 6)
+                .padding(.vertical, 4)
+                .background(Color.white.opacity(0.08))
+                .foregroundStyle(.white.opacity(0.85))
+                .clipShape(Capsule())
+        }
     }
 
     // MARK: - Quản Lý Chuyển Tuần & Sao Chép Lịch
