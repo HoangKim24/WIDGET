@@ -22,14 +22,37 @@ struct WeeklyGridScheduleView: View {
     @State private var showResetAlert = false
     @State private var showAutoGuide = false
     @State private var showImportSheet = false
+    @State private var showDatePickerSheet = false
+    @State private var pickerSelectedDate: Date = Date()
+    @State private var showCopiedAlert = false
+    @State private var copiedCount: Int = 0
 
-    // Danh sách 7 ngày trong tuần hiện tại (Thứ 2 -> Chủ Nhật)
+    // Quản lý tuần (0 = tuần này, +1 = tuần sau, +2, +3... và -1 = tuần trước)
+    @State private var weekOffset: Int = 0
+
+    // Danh sách 7 ngày trong tuần đang chọn (Thứ 2 -> Chủ Nhật)
     private var currentWeekDays: [Date] {
         let today = calendar.startOfDay(for: Date())
         let weekday = calendar.component(.weekday, from: today)
         let daysFromMonday = (weekday + 5) % 7
-        let monday = calendar.date(byAdding: .day, value: -daysFromMonday, to: today) ?? today
-        return (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: monday) }
+        let currentMonday = calendar.date(byAdding: .day, value: -daysFromMonday, to: today) ?? today
+        let targetMonday = calendar.date(byAdding: .day, value: weekOffset * 7, to: currentMonday) ?? currentMonday
+        return (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: targetMonday) }
+    }
+
+    private var weekHeaderTitle: String {
+        guard let first = currentWeekDays.first else { return "Lịch Tuần" }
+        let weekNum = calendar.component(.weekOfYear, from: first)
+        return "Tuần \(weekNum)"
+    }
+
+    private var weekDateSubtext: String {
+        guard let first = currentWeekDays.first, let last = currentWeekDays.last else { return "" }
+        let fmt = DateFormatter()
+        fmt.dateFormat = "dd/MM"
+        let yearFmt = DateFormatter()
+        yearFmt.dateFormat = "yyyy"
+        return "\(fmt.string(from: first)) – \(fmt.string(from: last))/\(yearFmt.string(from: last))"
     }
 
     // Sự kiện thuộc ngày đang chọn (bao gồm cả sự kiện lặp lại hàng tuần vào thứ này)
@@ -106,6 +129,12 @@ struct WeeklyGridScheduleView: View {
                         }
 
                         Button {
+                            copyCurrentWeekToNextWeek()
+                        } label: {
+                            Label("Sao Chép Lịch Sang Tuần Sau", systemImage: "doc.on.doc")
+                        }
+
+                        Button {
                             showImportSheet = true
                         } label: {
                             Label("Dán Lịch Từ Zalo / Ghi Chú", systemImage: "doc.on.clipboard")
@@ -136,17 +165,133 @@ struct WeeklyGridScheduleView: View {
             .sheet(isPresented: $showImportSheet) {
                 SmartScheduleImportSheet(viewModel: viewModel)
             }
+            .sheet(isPresented: $showDatePickerSheet) {
+                MonthWeekDatePickerSheet(
+                    selectedDate: $pickerSelectedDate,
+                    onSelectDate: { picked in
+                        jumpToDate(picked)
+                    }
+                )
+            }
+            .alert("Sao Chép Thành Công", isPresented: $showCopiedAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("Đã sao chép \(copiedCount) sự kiện sang tuần sau thành công!")
+            }
         }
     }
 
     // MARK: - Component 1: Bảng 7 Cột Tuần Trực Quan (Chạm để chọn ngày)
     private var weeklyMatrixOverviewCard: some View {
         VStack(alignment: .leading, spacing: 10) {
+            // Thanh Điều Hướng Tuần & Lịch Tháng
+            HStack(spacing: 8) {
+                Button {
+                    changeWeek(by: -1)
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 11, weight: .bold))
+                        .padding(7)
+                        .background(Color.white.opacity(0.08))
+                        .foregroundStyle(.white)
+                        .clipShape(Circle())
+                }
+
+                Spacer()
+
+                // Nút mở Lịch Tháng / Xem tên tuần
+                Button {
+                    pickerSelectedDate = selectedDate
+                    showDatePickerSheet = true
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "calendar")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(Color.cyan)
+
+                        Text(weekHeaderTitle)
+                            .font(.system(size: 13, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white)
+
+                        if weekOffset == 0 {
+                            Text("TUẦN NÀY")
+                                .font(.system(size: 8.5, weight: .heavy))
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.blue.opacity(0.3))
+                                .foregroundStyle(Color.cyan)
+                                .clipShape(Capsule())
+                        } else if weekOffset == 1 {
+                            Text("TUẦN SAU")
+                                .font(.system(size: 8.5, weight: .heavy))
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.green.opacity(0.3))
+                                .foregroundStyle(Color.green)
+                                .clipShape(Capsule())
+                        } else if weekOffset > 1 {
+                            Text("+\(weekOffset) TUẦN")
+                                .font(.system(size: 8.5, weight: .heavy))
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.purple.opacity(0.3))
+                                .foregroundStyle(Color.purple)
+                                .clipShape(Capsule())
+                        } else {
+                            Text("\(weekOffset) TUẦN")
+                                .font(.system(size: 8.5, weight: .heavy))
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.gray.opacity(0.3))
+                                .foregroundStyle(Color.gray)
+                                .clipShape(Capsule())
+                        }
+
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 8, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.5))
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 5)
+                    .background(Color.white.opacity(0.06))
+                    .clipShape(Capsule())
+                }
+
+                Spacer()
+
+                if weekOffset != 0 {
+                    Button {
+                        withAnimation(.spring(response: 0.3)) {
+                            weekOffset = 0
+                            selectedDate = calendar.startOfDay(for: Date())
+                        }
+                    } label: {
+                        Text("Hôm nay")
+                            .font(.system(size: 10, weight: .bold))
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 4)
+                            .background(Color.orange.opacity(0.25))
+                            .foregroundStyle(Color.orange)
+                            .clipShape(Capsule())
+                    }
+                }
+
+                Button {
+                    changeWeek(by: 1)
+                } label: {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 11, weight: .bold))
+                        .padding(7)
+                        .background(Color.white.opacity(0.08))
+                        .foregroundStyle(.white)
+                        .clipShape(Circle())
+                }
+            }
+
             HStack {
-                Text("BẢNG 7 NGÀY TRONG TUẦN")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(.white.opacity(0.6))
-                    .tracking(0.5)
+                Text(weekDateSubtext)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.55))
 
                 Spacer()
 
@@ -668,6 +813,75 @@ struct WeeklyGridScheduleView: View {
         return category == .study || category == .health
     }
 
+    // MARK: - Quản Lý Chuyển Tuần & Sao Chép Lịch
+    private func changeWeek(by delta: Int) {
+        let newOffset = weekOffset + delta
+        withAnimation(.spring(response: 0.3)) {
+            weekOffset = newOffset
+            if newOffset == 0 {
+                selectedDate = calendar.startOfDay(for: Date())
+            } else {
+                let today = calendar.startOfDay(for: Date())
+                let weekday = calendar.component(.weekday, from: today)
+                let daysFromMonday = (weekday + 5) % 7
+                let currentMonday = calendar.date(byAdding: .day, value: -daysFromMonday, to: today) ?? today
+                let targetMonday = calendar.date(byAdding: .day, value: newOffset * 7, to: currentMonday) ?? currentMonday
+                selectedDate = targetMonday
+            }
+        }
+    }
+
+    private func jumpToDate(_ date: Date) {
+        let today = calendar.startOfDay(for: Date())
+        let target = calendar.startOfDay(for: date)
+
+        let weekdayToday = calendar.component(.weekday, from: today)
+        let mondayToday = calendar.date(byAdding: .day, value: -((weekdayToday + 5) % 7), to: today) ?? today
+
+        let weekdayTarget = calendar.component(.weekday, from: target)
+        let mondayTarget = calendar.date(byAdding: .day, value: -((weekdayTarget + 5) % 7), to: target) ?? target
+
+        let daysDiff = calendar.dateComponents([.day], from: mondayToday, to: mondayTarget).day ?? 0
+        let offset = Int(round(Double(daysDiff) / 7.0))
+
+        withAnimation(.spring(response: 0.3)) {
+            weekOffset = offset
+            selectedDate = target
+        }
+    }
+
+    private func copyCurrentWeekToNextWeek() {
+        let weekDays = currentWeekDays
+        guard let firstDay = weekDays.first, let lastDay = weekDays.last else { return }
+        let endOfLastDay = calendar.date(byAdding: .day, value: 1, to: lastDay) ?? lastDay
+
+        let eventsToCopy = viewModel.events.filter { ev in
+            !ev.isRecurringWeekly && ev.startDate >= firstDay && ev.startDate < endOfLastDay
+        }
+
+        guard !eventsToCopy.isEmpty else { return }
+
+        for ev in eventsToCopy {
+            if let newStart = calendar.date(byAdding: .day, value: 7, to: ev.startDate),
+               let newEnd = calendar.date(byAdding: .day, value: 7, to: ev.endDate) {
+                let copiedEvent = CalendarEvent(
+                    title: ev.title,
+                    startDate: newStart,
+                    endDate: newEnd,
+                    category: ev.category,
+                    isAllDay: ev.isAllDay,
+                    isRecurringWeekly: false,
+                    hasReminder: ev.hasReminder
+                )
+                viewModel.add(copiedEvent)
+            }
+        }
+
+        copiedCount = eventsToCopy.count
+        showCopiedAlert = true
+        changeWeek(by: 1)
+    }
+
     private func triggerShortcutsUpdate() {
         let shortcutName = "Cập Nhật Lịch Tuần"
         guard let encoded = shortcutName.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else { return }
@@ -679,6 +893,97 @@ struct WeeklyGridScheduleView: View {
                     }
                 }
             }
+        }
+    }
+}
+
+// MARK: - Sheet Lịch Tháng Để Nhảy Nhanh Tới Bất Kỳ Tuần Nào (Tối Ưu Xếp Lịch Trước 1 Tháng)
+struct MonthWeekDatePickerSheet: View {
+    @Binding var selectedDate: Date
+    var onSelectDate: (Date) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 16) {
+                DatePicker(
+                    "Chọn ngày",
+                    selection: $selectedDate,
+                    displayedComponents: [.date]
+                )
+                .datePickerStyle(.graphical)
+                .tint(Color(red: 0.18, green: 0.58, blue: 1.0))
+                .padding(12)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color(red: 0.12, green: 0.13, blue: 0.17))
+                )
+                .padding(.horizontal)
+
+                // Các nút chọn nhanh
+                HStack(spacing: 8) {
+                    quickButton(title: "Hôm Nay", daysAhead: 0)
+                    quickButton(title: "+1 Tuần", daysAhead: 7)
+                    quickButton(title: "+2 Tuần", daysAhead: 14)
+                    quickButton(title: "+1 Tháng", daysAhead: 30)
+                }
+                .padding(.horizontal)
+
+                Button {
+                    onSelectDate(selectedDate)
+                    dismiss()
+                } label: {
+                    HStack {
+                        Image(systemName: "checkmark.circle.fill")
+                        Text("Đi Đến Tuần Này Để Xếp Lịch")
+                            .font(.system(size: 15, weight: .bold))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 48)
+                    .background(
+                        LinearGradient(
+                            colors: [Color(red: 0.18, green: 0.58, blue: 1.0), Color(red: 0.42, green: 0.36, blue: 0.91)],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                .padding(.horizontal)
+                .padding(.top, 4)
+
+                Spacer()
+            }
+            .padding(.top, 16)
+            .background(Color(red: 0.08, green: 0.09, blue: 0.12).ignoresSafeArea())
+            .navigationTitle("Chọn Ngày / Tháng")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Đóng") {
+                        dismiss()
+                    }
+                    .foregroundStyle(.white)
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+    }
+
+    private func quickButton(title: String, daysAhead: Int) -> some View {
+        Button {
+            if let newDate = Calendar.current.date(byAdding: .day, value: daysAhead, to: Date()) {
+                selectedDate = newDate
+            }
+        } label: {
+            Text(title)
+                .font(.system(size: 11, weight: .semibold))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 7)
+                .background(Color.white.opacity(0.08))
+                .foregroundStyle(.white)
+                .clipShape(Capsule())
         }
     }
 }
