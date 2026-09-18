@@ -30,6 +30,16 @@ struct LockScreenStudioView: View {
     @State private var selectedPhotoItem: PhotosPickerItem? = nil
     @State private var customLoadedImage: UIImage? = nil
     @State private var showSuccessTutorial = false
+    @State private var hexInputText: String = ""
+
+    // Bảng màu thịnh hành từ Color Hunt (Color Hunt Popular Palettes)
+    private let colorHuntPresets: [(title: String, hex: String)] = [
+        ("Cam Đất", "#E76F51"),
+        ("Xanh Ngọc", "#2A9D8F"),
+        ("Hoàng Hôn", "#E9C46A"),
+        ("Tím Pastel", "#B388FF"),
+        ("Bạc Hà", "#06D6A0")
+    ]
 
     var body: some View {
         NavigationStack {
@@ -48,6 +58,11 @@ struct LockScreenStudioView: View {
             .padding(.bottom, 8)
             .background(Color(red: 0.08, green: 0.08, blue: 0.10).ignoresSafeArea())
             .navigationBarHidden(true)
+            .onAppear {
+                if let hex = config.customHexColor {
+                    hexInputText = hex
+                }
+            }
             .onChange(of: config) { newConfig in
                 newConfig.save()
             }
@@ -89,7 +104,7 @@ struct LockScreenStudioView: View {
             HStack(spacing: 8) {
                 Image(systemName: "sparkles")
                     .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(config.accentColor.color)
+                    .foregroundStyle(config.effectiveAccentColor)
 
                 Text("Studio Lịch Khóa")
                     .font(.system(size: 18, weight: .bold, design: .rounded))
@@ -177,7 +192,7 @@ struct LockScreenStudioView: View {
                         .frame(maxWidth: .infinity)
                         .background(
                             Capsule()
-                                .fill(selectedTab == tab ? config.accentColor.color : Color.white.opacity(0.08))
+                                .fill(selectedTab == tab ? config.effectiveAccentColor : Color.white.opacity(0.08))
                         )
                         .foregroundStyle(selectedTab == tab ? Color.black : Color.white.opacity(0.8))
                     }
@@ -198,7 +213,7 @@ struct LockScreenStudioView: View {
                     colorSection
                 }
             }
-            .frame(height: 90)
+            .frame(minHeight: 90, maxHeight: 110)
             .padding(.horizontal, 14)
 
             // Nút Lưu Hình Nền To Bản
@@ -226,13 +241,13 @@ struct LockScreenStudioView: View {
                 .padding(.vertical, 13)
                 .background(
                     LinearGradient(
-                        colors: [config.accentColor.color, config.accentColor.color.opacity(0.85)],
+                        colors: [config.effectiveAccentColor, config.effectiveAccentColor.opacity(0.85)],
                         startPoint: .leading,
                         endPoint: .trailing
                     )
                 )
                 .clipShape(Capsule())
-                .shadow(color: config.accentColor.color.opacity(0.4), radius: 10, y: 4)
+                .shadow(color: config.effectiveAccentColor.opacity(0.4), radius: 10, y: 4)
             }
             .disabled(saveManager.isSaving)
             .padding(.horizontal, 14)
@@ -259,7 +274,7 @@ struct LockScreenStudioView: View {
                     VStack(spacing: 4) {
                         ZStack {
                             Circle()
-                                .fill(config.preset == .custom ? config.accentColor.color : Color.white.opacity(0.12))
+                                .fill(config.preset == .custom ? config.effectiveAccentColor : Color.white.opacity(0.12))
                                 .frame(width: 44, height: 44)
                             Image(systemName: "photo.badge.plus")
                                 .font(.system(size: 17))
@@ -284,13 +299,13 @@ struct LockScreenStudioView: View {
                                 .frame(width: 44, height: 44)
                                 .overlay(
                                     Circle()
-                                        .stroke(config.preset == preset ? config.accentColor.color : Color.white.opacity(0.2), lineWidth: config.preset == preset ? 2.5 : 1)
-                                )
-                                .shadow(color: config.preset == preset ? config.accentColor.color.opacity(0.5) : Color.clear, radius: 5)
+                                        .stroke(config.preset == preset ? config.effectiveAccentColor : Color.white.opacity(0.2), lineWidth: config.preset == preset ? 2.5 : 1)
+                                 )
+                                .shadow(color: config.preset == preset ? config.effectiveAccentColor.opacity(0.5) : Color.clear, radius: 5)
 
                             Text(preset.title)
                                 .font(.system(size: 10, weight: .medium))
-                                .foregroundStyle(config.preset == preset ? config.accentColor.color : .white.opacity(0.8))
+                                .foregroundStyle(config.preset == preset ? config.effectiveAccentColor : .white.opacity(0.8))
                         }
                     }
                 }
@@ -311,7 +326,7 @@ struct LockScreenStudioView: View {
                     VStack(spacing: 6) {
                         Image(systemName: layout.iconName)
                             .font(.system(size: 18, weight: .bold))
-                            .foregroundStyle(config.layoutType == layout ? Color.black : config.accentColor.color)
+                            .foregroundStyle(config.layoutType == layout ? Color.black : config.effectiveAccentColor)
 
                         Text(layout.title)
                             .font(.system(size: 11, weight: .semibold))
@@ -321,7 +336,7 @@ struct LockScreenStudioView: View {
                     .frame(height: 70)
                     .background(
                         RoundedRectangle(cornerRadius: 14)
-                            .fill(config.layoutType == layout ? config.accentColor.color : Color.white.opacity(0.08))
+                            .fill(config.layoutType == layout ? config.effectiveAccentColor : Color.white.opacity(0.08))
                     )
                 }
             }
@@ -346,7 +361,7 @@ struct LockScreenStudioView: View {
                             .frame(height: 38)
                             .background(
                                 RoundedRectangle(cornerRadius: 10)
-                                    .fill(config.position == pos ? config.accentColor.color : Color.white.opacity(0.08))
+                                    .fill(config.position == pos ? config.effectiveAccentColor : Color.white.opacity(0.08))
                             )
                     }
                 }
@@ -358,39 +373,137 @@ struct LockScreenStudioView: View {
                     .font(.system(size: 11))
                     .foregroundStyle(.white.opacity(0.6))
                 Slider(value: $config.fineTuneYOffset, in: -40...40, step: 2)
-                    .tint(config.accentColor.color)
+                    .tint(config.effectiveAccentColor)
             }
             .padding(.horizontal, 4)
         }
     }
 
-    // MARK: - Tab Màu Sắc (Color)
+    // MARK: - Tab Màu Sắc (Color Hunt & Tone-sur-tone)
     private var colorSection: some View {
-        HStack(spacing: 14) {
-            ForEach(AccentColorTheme.allCases) { theme in
+        VStack(spacing: 8) {
+            // Hàng 1: Màu có sẵn + Màu Color Hunt thịnh hành
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    // Màu cơ bản
+                    ForEach(AccentColorTheme.allCases) { theme in
+                        let isSelected = config.customHexColor == nil && config.accentColor == theme
+                        Button {
+                            withAnimation(.spring(response: 0.3)) {
+                                config.customHexColor = nil
+                                config.accentColor = theme
+                            }
+                        } label: {
+                            VStack(spacing: 4) {
+                                Circle()
+                                    .fill(theme.color)
+                                    .frame(width: 32, height: 32)
+                                    .overlay(
+                                        Circle()
+                                            .stroke(Color.white, lineWidth: isSelected ? 2.5 : 0)
+                                    )
+                                    .shadow(color: theme.color.opacity(0.4), radius: 4)
+
+                                Text(theme.title)
+                                    .font(.system(size: 9, weight: .medium))
+                                    .foregroundStyle(isSelected ? theme.color : .white.opacity(0.7))
+                            }
+                        }
+                    }
+
+                    // Màu Color Hunt đề xuất
+                    ForEach(colorHuntPresets, id: \.hex) { preset in
+                        let isSelected = config.customHexColor?.uppercased() == preset.hex.uppercased()
+                        let presetColor = Color(hex: preset.hex) ?? .white
+                        Button {
+                            withAnimation(.spring(response: 0.3)) {
+                                config.customHexColor = preset.hex
+                                hexInputText = preset.hex
+                            }
+                        } label: {
+                            VStack(spacing: 4) {
+                                Circle()
+                                    .fill(presetColor)
+                                    .frame(width: 32, height: 32)
+                                    .overlay(
+                                        Circle()
+                                            .stroke(Color.white, lineWidth: isSelected ? 2.5 : 0)
+                                    )
+                                    .shadow(color: presetColor.opacity(0.4), radius: 4)
+
+                                Text(preset.title)
+                                    .font(.system(size: 9, weight: .medium))
+                                    .foregroundStyle(isSelected ? presetColor : .white.opacity(0.7))
+                            }
+                        }
+                    }
+                }
+                .padding(.vertical, 2)
+            }
+
+            // Hàng 2: Nhập mã HEX bất kỳ từ Color Hunt & Toggle Đồng bộ màu
+            HStack(spacing: 8) {
+                // Ô nhập mã HEX
+                HStack(spacing: 6) {
+                    Image(systemName: "number")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(config.effectiveAccentColor)
+
+                    TextField("Mã HEX (vd: #E76F51)", text: $hexInputText)
+                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(.white)
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.characters)
+                        .onChange(of: hexInputText) { newHex in
+                            let clean = newHex.trimmingCharacters(in: .whitespacesAndNewlines)
+                            if clean.count >= 4, Color(hex: clean) != nil {
+                                config.customHexColor = clean
+                            }
+                        }
+
+                    Button {
+                        if let clip = UIPasteboard.general.string?.trimmingCharacters(in: .whitespacesAndNewlines),
+                           !clip.isEmpty {
+                            hexInputText = clip
+                            if Color(hex: clip) != nil {
+                                config.customHexColor = clip
+                            }
+                        }
+                    } label: {
+                        Text("Dán")
+                            .font(.system(size: 10, weight: .bold))
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 3)
+                            .background(config.effectiveAccentColor.opacity(0.25))
+                            .foregroundStyle(config.effectiveAccentColor)
+                            .clipShape(Capsule())
+                    }
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 5)
+                .background(Color.white.opacity(0.07))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                // Nút gạt Tone-sur-tone (Đồng bộ màu toàn bộ sự kiện)
                 Button {
                     withAnimation(.spring(response: 0.3)) {
-                        config.accentColor = theme
+                        config.isMonochromeTheme.toggle()
                     }
                 } label: {
-                    VStack(spacing: 5) {
-                        Circle()
-                            .fill(theme.color)
-                            .frame(width: 38, height: 38)
-                            .overlay(
-                                Circle()
-                                    .stroke(Color.white, lineWidth: config.accentColor == theme ? 3 : 0)
-                            )
-                            .shadow(color: theme.color.opacity(0.5), radius: 6)
-
-                        Text(theme.title)
+                    HStack(spacing: 4) {
+                        Image(systemName: config.isMonochromeTheme ? "checkmark.circle.fill" : "circle")
+                            .font(.system(size: 10))
+                        Text("Đồng bộ màu")
                             .font(.system(size: 10, weight: .medium))
-                            .foregroundStyle(config.accentColor == theme ? theme.color : .white.opacity(0.7))
                     }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 6)
+                    .background(config.isMonochromeTheme ? config.effectiveAccentColor.opacity(0.2) : Color.white.opacity(0.06))
+                    .foregroundStyle(config.isMonochromeTheme ? config.effectiveAccentColor : Color.white.opacity(0.7))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
             }
         }
-        .frame(maxWidth: .infinity)
     }
 
     // MARK: - Hướng Dẫn Cài Đặt Khi Lưu Thành Công
@@ -398,7 +511,7 @@ struct LockScreenStudioView: View {
         VStack(spacing: 20) {
             Image(systemName: "checkmark.seal.fill")
                 .font(.system(size: 56))
-                .foregroundStyle(config.accentColor.color)
+                .foregroundStyle(config.effectiveAccentColor)
                 .padding(.top, 24)
 
             Text("Đã Lưu Hình Nền Vào Ảnh!")
@@ -433,7 +546,7 @@ struct LockScreenStudioView: View {
                     .foregroundStyle(.black)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
-                    .background(config.accentColor.color)
+                    .background(config.effectiveAccentColor)
                     .clipShape(Capsule())
             }
             .padding(.horizontal, 20)
@@ -450,7 +563,7 @@ struct LockScreenStudioView: View {
                 .font(.system(size: 12, weight: .bold))
                 .foregroundStyle(.black)
                 .frame(width: 22, height: 22)
-                .background(Circle().fill(config.accentColor.color))
+                .background(Circle().fill(config.effectiveAccentColor))
 
             Text(text)
                 .font(.system(size: 13, weight: .medium))

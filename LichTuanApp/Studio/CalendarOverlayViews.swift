@@ -1,11 +1,15 @@
 import SwiftUI
 
-// MARK: - Daily Agenda and Week Schedule (Chuẩn 100% Theo Mẫu Tham Khảo)
+// MARK: - Daily Agenda and Week Schedule (Hỗ Trợ 3 Bố Cục Thật & Màu Sắc Color Hunt)
 struct DailyAgendaAndWeekScheduleView: View {
     let events: [CalendarEvent]
-    var reminders: [String] = []
+    var config: WallpaperConfig = WallpaperConfig()
 
     private let calendar = Calendar.current
+
+    private var accent: Color {
+        config.effectiveAccentColor
+    }
 
     private var currentWeekDays: [Date] {
         let today = calendar.startOfDay(for: Date())
@@ -15,53 +19,215 @@ struct DailyAgendaAndWeekScheduleView: View {
         return (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: monday) }
     }
 
-    private var displayEvents: [CalendarEvent] {
-        events
+    /// Lấy danh sách sự kiện cho một ngày (hỗ trợ cả sự kiện lặp lại hàng tuần)
+    private func events(for day: Date) -> [CalendarEvent] {
+        let dayWeekday = calendar.component(.weekday, from: day)
+        return events.filter { ev in
+            if calendar.isDate(ev.startDate, inSameDayAs: day) {
+                return true
+            }
+            if ev.isRecurringWeekly {
+                let evWeekday = calendar.component(.weekday, from: ev.startDate)
+                return evWeekday == dayWeekday
+            }
+            return false
+        }.sorted { $0.startDate < $1.startDate }
     }
 
+    /// Sự kiện hôm nay
     private var todayEvents: [CalendarEvent] {
-        displayEvents.filter { calendar.isDateInToday($0.startDate) }
+        let today = Date()
+        return events(for: today)
+    }
+
+    /// Sự kiện có bật nhắc nhở (Reminders)
+    private var reminderEvents: [CalendarEvent] {
+        events.filter { $0.hasReminder }
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            // MARK: - PHẦN 1: BẢNG TUẦN 7 CỘT (Mon - Sun / T2 - CN)
-            weekMatrixCard
-
-            // MARK: - PHẦN 2: LỊCH TRÌNH HÔM NAY (Today)
-            todayAgendaSection
-
-            // MARK: - PHẦN 3: GHI CHÚ NHẮC VIỆC (Reminders)
-            remindersSection
+        Group {
+            switch config.layoutType {
+            case .columns:
+                columnsLayoutView
+            case .rows:
+                rowsLayoutView
+            case .frostedCard:
+                frostedCardLayoutView
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    // MARK: - Component 1: Bảng 7 Cột Tuần
+    // MARK: - BỐ CỤC 1: 7 CỘT TỐI GIẢN (Columns Layout)
+    private var columnsLayoutView: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            weekMatrixCard
+            todayAgendaSection
+            remindersSection
+        }
+    }
+
+    // MARK: - BỐ CỤC 2: 7 DÒNG CHI TIẾT (Rows Layout)
+    private var rowsLayoutView: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Weekly Schedule")
+                .font(.system(size: 18, weight: .heavy, design: .rounded))
+                .foregroundStyle(.white)
+
+            VStack(spacing: 6) {
+                ForEach(currentWeekDays, id: \.self) { day in
+                    let isToday = calendar.isDateInToday(day)
+                    let dayNum = calendar.component(.day, from: day)
+                    let dayName = vietnameseShortDay(for: day)
+                    let dayEvs = events(for: day)
+
+                    HStack(spacing: 8) {
+                        // Cột Thứ & Ngày bên trái
+                        HStack(spacing: 3) {
+                            Text(dayName)
+                                .font(.system(size: 10, weight: .bold))
+                            Text("\(dayNum)")
+                                .font(.system(size: 11, weight: .heavy, design: .rounded))
+                        }
+                        .foregroundStyle(isToday ? Color.black : (accent))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(
+                            Capsule()
+                                .fill(isToday ? accent : Color.white.opacity(0.08))
+                        )
+                        .frame(width: 58, alignment: .leading)
+
+                        // Các ô việc theo hàng ngang
+                        if !dayEvs.isEmpty {
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 4) {
+                                    ForEach(dayEvs.prefix(3)) { ev in
+                                        HStack(spacing: 3) {
+                                            Text(formatTimeRange(ev))
+                                                .font(.system(size: 8, weight: .bold, design: .monospaced))
+                                                .opacity(0.85)
+                                            Text(ev.title)
+                                                .font(.system(size: 8.5, weight: .semibold))
+                                                .lineLimit(1)
+                                        }
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 3)
+                                        .background(eventColor(for: ev.category))
+                                        .foregroundStyle(isLightColor(ev.category) ? Color.black : Color.white)
+                                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                                    }
+                                }
+                            }
+                        } else {
+                            Text("—")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.white.opacity(0.25))
+                                .padding(.leading, 4)
+                        }
+
+                        Spacer()
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(isToday ? accent.opacity(0.12) : Color.black.opacity(0.25))
+                    )
+                }
+            }
+            .padding(8)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(Color(red: 0.11, green: 0.12, blue: 0.15).opacity(0.85))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                    )
+            )
+
+            todayAgendaSection
+            remindersSection
+        }
+    }
+
+    // MARK: - BỐ CỤC 3: KÍNH MỜ SANG CHẢNH (Frosted Glassmorphism Card)
+    private var frostedCardLayoutView: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            // Header thẻ kính
+            HStack {
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(accent)
+                        .frame(width: 8, height: 8)
+                    Text("AGENDA & WEEK")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(accent)
+                        .tracking(1)
+                }
+
+                Spacer()
+
+                Text("Hôm nay: \(vietnameseShortDay(for: Date()))")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.7))
+            }
+            .padding(.bottom, 2)
+
+            weekMatrixCard
+            todayAgendaSection
+            remindersSection
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(Color(red: 0.12, green: 0.13, blue: 0.18).opacity(0.75))
+                .background(
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .fill(Color.white.opacity(0.06))
+                        .blur(radius: 12)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .stroke(
+                            LinearGradient(
+                                colors: [accent.opacity(0.6), Color.white.opacity(0.15)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1.5
+                        )
+                )
+                .shadow(color: Color.black.opacity(0.5), radius: 20, y: 10)
+        )
+    }
+
+    // MARK: - Component: Bảng 7 Cột Tuần
     private var weekMatrixCard: some View {
         HStack(alignment: .top, spacing: 3) {
             ForEach(currentWeekDays, id: \.self) { day in
                 let isToday = calendar.isDateInToday(day)
                 let dayNum = calendar.component(.day, from: day)
                 let dayName = vietnameseShortDay(for: day)
-                let dayEvents = displayEvents.filter { calendar.isDate($0.startDate, inSameDayAs: day) }
+                let dayEvents = events(for: day)
 
                 VStack(spacing: 3) {
                     // Header của cột (Thứ + Ngày)
                     VStack(spacing: 1) {
                         Text(dayName)
                             .font(.system(size: 9, weight: .bold))
-                            .foregroundStyle(isToday ? Color(red: 0.18, green: 0.58, blue: 1.0) : .white.opacity(0.75))
+                            .foregroundStyle(isToday ? accent : .white.opacity(0.75))
                         Text("\(dayNum)")
                             .font(.system(size: 11, weight: .heavy, design: .rounded))
-                            .foregroundStyle(isToday ? Color(red: 0.18, green: 0.58, blue: 1.0) : .white)
+                            .foregroundStyle(isToday ? accent : .white)
                     }
                     .padding(.bottom, 2)
                     .frame(maxWidth: .infinity)
                     .overlay(
                         Rectangle()
-                            .fill(Color.white.opacity(0.12))
-                            .frame(height: 1),
+                            .fill(isToday ? accent : Color.white.opacity(0.12))
+                            .frame(height: isToday ? 2 : 1),
                         alignment: .bottom
                     )
 
@@ -87,10 +253,10 @@ struct DailyAgendaAndWeekScheduleView: View {
                                 .clipShape(RoundedRectangle(cornerRadius: 3))
                             }
                         } else {
-                            Color.clear.frame(height: 48)
+                            Color.clear.frame(height: 44)
                         }
                     }
-                    .frame(minHeight: 48)
+                    .frame(minHeight: 44)
                 }
                 .frame(maxWidth: .infinity)
             }
@@ -107,57 +273,77 @@ struct DailyAgendaAndWeekScheduleView: View {
         )
     }
 
-    // MARK: - Component 2: Today (Lịch Trình Hôm Nay Với Khung Giờ Cụ Thể)
+    // MARK: - Component: Today
     private var todayAgendaSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             Text("Today")
-                .font(.system(size: 20, weight: .heavy, design: .rounded))
-                .foregroundStyle(.white)
+                .font(.system(size: 19, weight: .heavy, design: .rounded))
+                .foregroundStyle(accent)
 
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 5) {
                 if !todayEvents.isEmpty {
                     ForEach(todayEvents) { event in
-                        HStack(spacing: 16) {
+                        HStack(spacing: 14) {
                             Text(formatTimeRange(event))
-                                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                .font(.system(size: 13, weight: .bold, design: .monospaced))
                                 .foregroundStyle(.white)
                                 .frame(width: 95, alignment: .leading)
 
                             Text(event.title)
-                                .font(.system(size: 15, weight: .bold))
+                                .font(.system(size: 14, weight: .bold))
                                 .foregroundStyle(eventColor(for: event.category))
                                 .lineLimit(1)
+
+                            if event.hasReminder {
+                                Image(systemName: "bell.fill")
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(Color.yellow)
+                            }
                         }
                     }
                 } else {
                     HStack(spacing: 8) {
                         Image(systemName: "sun.max.fill")
                             .font(.system(size: 12))
-                            .foregroundStyle(Color.yellow.opacity(0.8))
-                        Text("Chưa có lịch trình hôm nay")
+                            .foregroundStyle(accent)
+                        Text("Không có lịch trình hôm nay")
                             .font(.system(size: 13, weight: .medium))
                             .foregroundStyle(.white.opacity(0.6))
                     }
-                    .padding(.vertical, 4)
+                    .padding(.vertical, 3)
                 }
             }
         }
     }
 
-    // MARK: - Component 3: Reminders (Ghi Chú Nhắc Việc)
+    // MARK: - Component: Reminders
     @ViewBuilder
     private var remindersSection: some View {
-        if !reminders.isEmpty {
+        if !reminderEvents.isEmpty {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Reminders")
-                    .font(.system(size: 17, weight: .heavy, design: .rounded))
-                    .foregroundStyle(Color(red: 0.95, green: 0.61, blue: 0.07)) // Màu cam giống ảnh
+                HStack(spacing: 6) {
+                    Image(systemName: "bell.fill")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color(red: 0.95, green: 0.61, blue: 0.07))
+                    Text("Reminders")
+                        .font(.system(size: 16, weight: .heavy, design: .rounded))
+                        .foregroundStyle(Color(red: 0.95, green: 0.61, blue: 0.07))
+                }
 
                 VStack(alignment: .leading, spacing: 2) {
-                    ForEach(reminders, id: \.self) { item in
-                        Text(item)
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(.white)
+                    ForEach(reminderEvents.prefix(4)) { event in
+                        HStack(spacing: 6) {
+                            Circle()
+                                .fill(Color(red: 0.95, green: 0.61, blue: 0.07))
+                                .frame(width: 4, height: 4)
+                            Text(event.title)
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .lineLimit(1)
+                            Text("(\(formatShortTime(event)))")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.white.opacity(0.6))
+                        }
                     }
                 }
             }
@@ -194,17 +380,23 @@ struct DailyAgendaAndWeekScheduleView: View {
     }
 
     private func eventColor(for category: EventCategory) -> Color {
+        if config.isMonochromeTheme {
+            return accent
+        }
         switch category {
-        case .work: return Color(red: 0.92, green: 0.30, blue: 0.29)     // Đỏ san hô
-        case .personal: return Color(red: 0.18, green: 0.58, blue: 1.0)  // Xanh dương
-        case .health: return Color(red: 0.28, green: 0.79, blue: 0.89)    // Xanh cyan
-        case .study: return Color(red: 0.98, green: 0.79, blue: 0.14)     // Vàng
-        case .family: return Color(red: 0.91, green: 0.26, blue: 0.58)    // Hồng
-        case .other: return Color(red: 0.42, green: 0.36, blue: 0.91)     // Tím
+        case .work: return Color(red: 0.92, green: 0.30, blue: 0.29)
+        case .personal: return Color(red: 0.18, green: 0.58, blue: 1.0)
+        case .health: return Color(red: 0.28, green: 0.79, blue: 0.89)
+        case .study: return Color(red: 0.98, green: 0.79, blue: 0.14)
+        case .family: return Color(red: 0.91, green: 0.26, blue: 0.58)
+        case .other: return Color(red: 0.42, green: 0.36, blue: 0.91)
         }
     }
 
     private func isLightColor(_ category: EventCategory) -> Bool {
+        if config.isMonochromeTheme {
+            return false
+        }
         return category == .study || category == .health
     }
 }

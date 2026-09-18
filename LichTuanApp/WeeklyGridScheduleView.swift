@@ -17,8 +17,11 @@ struct WeeklyGridScheduleView: View {
     @State private var endTime: Date = Calendar.current.date(bySettingHour: 10, minute: 0, second: 0, of: Date()) ?? Date()
     @State private var selectedCategory: EventCategory = .work
     @State private var isAllDay: Bool = false
+    @State private var isRecurringWeekly: Bool = false
+    @State private var hasReminder: Bool = false
     @State private var showResetAlert = false
     @State private var showAutoGuide = false
+    @State private var showImportSheet = false
 
     // Danh sách 7 ngày trong tuần hiện tại (Thứ 2 -> Chủ Nhật)
     private var currentWeekDays: [Date] {
@@ -29,10 +32,17 @@ struct WeeklyGridScheduleView: View {
         return (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: monday) }
     }
 
-    // Sự kiện thuộc ngày đang chọn
+    // Sự kiện thuộc ngày đang chọn (bao gồm cả sự kiện lặp lại hàng tuần vào thứ này)
     private var eventsForSelectedDate: [CalendarEvent] {
-        viewModel.events
-            .filter { calendar.isDate($0.startDate, inSameDayAs: selectedDate) }
+        let selWeekday = calendar.component(.weekday, from: selectedDate)
+        return viewModel.events
+            .filter { ev in
+                if calendar.isDate(ev.startDate, inSameDayAs: selectedDate) { return true }
+                if ev.isRecurringWeekly {
+                    return calendar.component(.weekday, from: ev.startDate) == selWeekday
+                }
+                return false
+            }
             .sorted { $0.startDate < $1.startDate }
     }
 
@@ -83,14 +93,18 @@ struct WeeklyGridScheduleView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button {
-                        showAutoGuide = true
+                        showImportSheet = true
                     } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "bolt.badge.automatic.fill")
-                            Text("Tự động")
-                                .font(.system(size: 12, weight: .semibold))
+                        HStack(spacing: 5) {
+                            Image(systemName: "doc.on.clipboard.fill")
+                            Text("Dán Lịch Zalo")
+                                .font(.system(size: 11, weight: .bold))
                         }
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 5)
+                        .background(Color(red: 0.18, green: 0.58, blue: 1.0).opacity(0.22))
                         .foregroundStyle(Color(red: 0.28, green: 0.70, blue: 1.0))
+                        .clipShape(Capsule())
                     }
                 }
 
@@ -102,7 +116,14 @@ struct WeeklyGridScheduleView: View {
                             Label("Cài Đặt Tự Động Hóa", systemImage: "bolt.badge.automatic")
                         }
 
+                        Button {
+                            showImportSheet = true
+                        } label: {
+                            Label("Dán Lịch Từ Zalo / Ghi Chú", systemImage: "doc.on.clipboard")
+                        }
+
                         Button(role: .destructive) {
+                            NotificationManager.shared.cancelAllNotifications()
                             viewModel.clearAll()
                         } label: {
                             Label("Xóa Hết Lịch Trình", systemImage: "trash")
@@ -116,6 +137,9 @@ struct WeeklyGridScheduleView: View {
             }
             .sheet(isPresented: $showAutoGuide) {
                 AutoWallpaperSetupGuideView()
+            }
+            .sheet(isPresented: $showImportSheet) {
+                SmartScheduleImportSheet(viewModel: viewModel)
             }
         }
     }
@@ -140,7 +164,14 @@ struct WeeklyGridScheduleView: View {
                 ForEach(currentWeekDays, id: \.self) { day in
                     let isSelected = calendar.isDate(day, inSameDayAs: selectedDate)
                     let isToday = calendar.isDateInToday(day)
-                    let dayEvents = viewModel.events.filter { calendar.isDate($0.startDate, inSameDayAs: day) }
+                    let dayWeekday = calendar.component(.weekday, from: day)
+                    let dayEvents = viewModel.events.filter { ev in
+                        if calendar.isDate(ev.startDate, inSameDayAs: day) { return true }
+                        if ev.isRecurringWeekly {
+                            return calendar.component(.weekday, from: ev.startDate) == dayWeekday
+                        }
+                        return false
+                    }.sorted { $0.startDate < $1.startDate }
                     let dayNum = calendar.component(.day, from: day)
                     let shortName = vietnameseWeekdayShort(day)
 
@@ -296,6 +327,11 @@ struct WeeklyGridScheduleView: View {
                         )
                         .labelsHidden()
                         .colorScheme(.dark)
+                        .onChange(of: startTime) { newStart in
+                            if endTime <= newStart {
+                                endTime = newStart.addingTimeInterval(3600)
+                            }
+                        }
                     }
                     .frame(maxWidth: .infinity)
                     .padding(8)
@@ -315,6 +351,7 @@ struct WeeklyGridScheduleView: View {
                         DatePicker(
                             "",
                             selection: $endTime,
+                            in: startTime.addingTimeInterval(900)...,
                             displayedComponents: .hourAndMinute
                         )
                         .labelsHidden()
@@ -361,6 +398,38 @@ struct WeeklyGridScheduleView: View {
                     }
                 }
             }
+
+            // 4. Tùy chọn nâng cao: Lặp lại hàng tuần & Bật nhắc nhở
+            VStack(spacing: 8) {
+                Toggle(isOn: $isRecurringWeekly) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "repeat")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundStyle(isRecurringWeekly ? Color(red: 0.18, green: 0.58, blue: 1.0) : .white.opacity(0.5))
+                        Text("Lặp lại hàng tuần (Thời khóa biểu)")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.9))
+                    }
+                }
+                .tint(Color(red: 0.18, green: 0.58, blue: 1.0))
+
+                Divider().background(Color.white.opacity(0.08))
+
+                Toggle(isOn: $hasReminder) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "bell.fill")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundStyle(hasReminder ? Color.yellow : .white.opacity(0.5))
+                        Text("Bật nhắc nhở (Đổ chuông & Ghim Reminders)")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.9))
+                    }
+                }
+                .tint(Color.yellow)
+            }
+            .padding(10)
+            .background(Color.white.opacity(0.04))
+            .clipShape(RoundedRectangle(cornerRadius: 10))
 
             // NÚT THÊM VÀO BẢNG
             Button {
@@ -446,17 +515,34 @@ struct WeeklyGridScheduleView: View {
                                 .foregroundStyle(.white.opacity(0.9))
                                 .frame(width: 95, alignment: .leading)
 
-                            // Tên công việc
-                            Text(event.title)
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundStyle(eventColor(for: event.category))
-                                .lineLimit(1)
+                            // Tên công việc + Icon lặp lại & nhắc nhở
+                            HStack(spacing: 6) {
+                                Text(event.title)
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundStyle(eventColor(for: event.category))
+                                    .lineLimit(1)
+
+                                if event.isRecurringWeekly {
+                                    Image(systemName: "repeat")
+                                        .font(.system(size: 11, weight: .bold))
+                                        .foregroundStyle(Color(red: 0.28, green: 0.70, blue: 1.0))
+                                }
+
+                                if event.hasReminder {
+                                    Image(systemName: "bell.fill")
+                                        .font(.system(size: 11, weight: .bold))
+                                        .foregroundStyle(Color.yellow)
+                                }
+                            }
 
                             Spacer()
 
                             // Nút xóa ô lịch
                             Button {
                                 withAnimation(.spring(response: 0.3)) {
+                                    if event.hasReminder {
+                                        NotificationManager.shared.cancelNotification(for: event.id)
+                                    }
                                     viewModel.delete(event)
                                 }
                             } label: {
@@ -529,11 +615,16 @@ struct WeeklyGridScheduleView: View {
             startDate: finalStart,
             endDate: finalEnd,
             category: selectedCategory,
-            isAllDay: isAllDay
+            isAllDay: isAllDay,
+            isRecurringWeekly: isRecurringWeekly,
+            hasReminder: hasReminder
         )
 
         withAnimation(.spring(response: 0.3)) {
             viewModel.add(event)
+            if hasReminder {
+                NotificationManager.shared.scheduleNotification(for: event)
+            }
             newEventTitle = ""
         }
     }

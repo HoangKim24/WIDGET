@@ -8,6 +8,8 @@ struct CalendarEvent: Identifiable, Codable, Equatable {
     var endDate: Date
     var category: EventCategory
     var isAllDay: Bool
+    var isRecurringWeekly: Bool
+    var hasReminder: Bool
 
     init(
         id: UUID = UUID(),
@@ -15,7 +17,9 @@ struct CalendarEvent: Identifiable, Codable, Equatable {
         startDate: Date,
         endDate: Date,
         category: EventCategory = .other,
-        isAllDay: Bool = false
+        isAllDay: Bool = false,
+        isRecurringWeekly: Bool = false,
+        hasReminder: Bool = false
     ) {
         self.id = id
         self.title = title
@@ -23,6 +27,8 @@ struct CalendarEvent: Identifiable, Codable, Equatable {
         self.endDate = endDate
         self.category = category
         self.isAllDay = isAllDay
+        self.isRecurringWeekly = isRecurringWeekly
+        self.hasReminder = hasReminder
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -32,6 +38,8 @@ struct CalendarEvent: Identifiable, Codable, Equatable {
         case endDate
         case category
         case isAllDay
+        case isRecurringWeekly
+        case hasReminder
     }
 
     init(from decoder: Decoder) throws {
@@ -42,5 +50,7 @@ struct CalendarEvent: Identifiable, Codable, Equatable {
         endDate = try container.decode(Date.self, forKey: .endDate)
         category = try container.decodeIfPresent(EventCategory.self, forKey: .category) ?? .other
         isAllDay = try container.decode(Bool.self, forKey: .isAllDay)
+        isRecurringWeekly = try container.decodeIfPresent(Bool.self, forKey: .isRecurringWeekly) ?? false
+        hasReminder = try container.decodeIfPresent(Bool.self, forKey: .hasReminder) ?? false
     }
 }

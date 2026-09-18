@@ -139,8 +139,8 @@ enum CalendarPosition: String, CaseIterable, Identifiable, Codable {
     var yRatio: CGFloat {
         switch self {
         case .top: return 0.28
-        case .center: return 0.48
-        case .bottom: return 0.68
+        case .center: return 0.42
+        case .bottom: return 0.56
         }
     }
 }
@@ -182,10 +182,19 @@ struct WallpaperConfig: Equatable, Codable {
     var layoutType: CalendarLayoutType = .rows
     var position: CalendarPosition = .top
     var accentColor: AccentColorTheme = .gold
+    var customHexColor: String? = nil
+    var isMonochromeTheme: Bool = false
     var dimOpacity: Double = 0.25
     var blurRadius: Double = 0.0
     var showEventDots: Bool = true
     var fineTuneYOffset: CGFloat = 0.0
+
+    var effectiveAccentColor: Color {
+        if let hex = customHexColor, let c = Color(hex: hex) {
+            return c
+        }
+        return accentColor.color
+    }
 
     private static let userDefaultsKey = "savedWallpaperConfig"
 
@@ -201,5 +210,43 @@ struct WallpaperConfig: Equatable, Codable {
         if let data = try? JSONEncoder().encode(self) {
             UserDefaults.standard.set(data, forKey: WallpaperConfig.userDefaultsKey)
         }
+    }
+}
+
+// MARK: - Color Hex Parser Chuẩn Color Hunt & Retina XDR
+extension Color {
+    init?(hex: String) {
+        var hexSanitized = hex.trimmingCharacters(in: .whitespacesAndNewlines)
+        hexSanitized = hexSanitized.replacingOccurrences(of: "#", with: "")
+
+        var rgb: UInt64 = 0
+        guard Scanner(string: hexSanitized).scanHexInt64(&rgb) else { return nil }
+
+        let length = hexSanitized.count
+        let r, g, b, a: Double
+
+        if length == 6 {
+            r = Double((rgb & 0xFF0000) >> 16) / 255.0
+            g = Double((rgb & 0x00FF00) >> 8) / 255.0
+            b = Double(rgb & 0x0000FF) / 255.0
+            a = 1.0
+        } else if length == 8 {
+            r = Double((rgb & 0xFF000000) >> 24) / 255.0
+            g = Double((rgb & 0x00FF0000) >> 16) / 255.0
+            b = Double((rgb & 0x0000FF00) >> 8) / 255.0
+            a = Double(rgb & 0x000000FF) / 255.0
+        } else if length == 3 {
+            let rInt = (rgb & 0xF00) >> 8
+            let gInt = (rgb & 0x0F0) >> 4
+            let bInt = rgb & 0x00F
+            r = Double(rInt * 17) / 255.0
+            g = Double(gInt * 17) / 255.0
+            b = Double(bInt * 17) / 255.0
+            a = 1.0
+        } else {
+            return nil
+        }
+
+        self.init(.sRGB, red: r, green: g, blue: b, opacity: a)
     }
 }

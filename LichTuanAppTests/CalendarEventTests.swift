@@ -59,4 +59,48 @@ final class CalendarEventTests: XCTestCase {
         store.delete(eventID: event.id)
         XCTAssertTrue(store.loadEvents().isEmpty)
     }
+
+    func testRecurringAndReminderFields() throws {
+        let event = CalendarEvent(
+            title: "Học Yoga hàng tuần",
+            startDate: Date(timeIntervalSince1970: 10_000),
+            endDate: Date(timeIntervalSince1970: 13_600),
+            category: .health,
+            isAllDay: false,
+            isRecurringWeekly: true,
+            hasReminder: true
+        )
+
+        let json = try EventCoding.jsonString(from: [event])
+        let decoded = try EventCoding.events(fromJSON: json)
+
+        XCTAssertEqual(decoded.count, 1)
+        XCTAssertTrue(decoded[0].isRecurringWeekly)
+        XCTAssertTrue(decoded[0].hasReminder)
+    }
+
+    func testScheduleTextParser() {
+        let sample = """
+        Thứ 2:
+        - 08:00 - 10:00: Đi làm
+        T3:
+        - 14:00 - 16:00: Họp team
+        CN:
+        - Cả ngày: Nghỉ ngơi
+        """
+
+        let parsed = ScheduleTextParser.parse(text: sample)
+        XCTAssertGreaterThanOrEqual(parsed.count, 3)
+
+        let first = parsed[0]
+        XCTAssertEqual(first.dayName, "T2")
+        XCTAssertEqual(first.startHour, 8)
+        XCTAssertEqual(first.endHour, 10)
+        XCTAssertEqual(first.title, "Đi làm")
+
+        let last = parsed.last!
+        XCTAssertEqual(last.dayName, "CN")
+        XCTAssertTrue(last.isAllDay)
+        XCTAssertEqual(last.title, "Nghỉ ngơi")
+    }
 }

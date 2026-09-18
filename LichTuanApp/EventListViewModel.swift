@@ -39,17 +39,26 @@ final class EventListViewModel: ObservableObject {
     }
 
     func delete(_ event: CalendarEvent) {
+        if event.hasReminder {
+            NotificationManager.shared.cancelNotification(for: event.id)
+        }
         store.delete(eventID: event.id)
         load()
     }
 
     func delete(at offsets: IndexSet) {
         let removedEvents = offsets.map { events[$0] }
-        removedEvents.forEach { store.delete(eventID: $0.id) }
+        removedEvents.forEach {
+            if $0.hasReminder {
+                NotificationManager.shared.cancelNotification(for: $0.id)
+            }
+            store.delete(eventID: $0.id)
+        }
         load()
     }
 
     func clearAll() {
+        NotificationManager.shared.cancelAllNotifications()
         store.clearAllEvents()
         events = []
     }
