@@ -59,6 +59,9 @@ struct LockScreenStudioView: View {
             .background(Color(red: 0.08, green: 0.08, blue: 0.10).ignoresSafeArea())
             .navigationBarHidden(true)
             .onAppear {
+                if customLoadedImage == nil {
+                    customLoadedImage = WallpaperConfig.loadCustomImage()
+                }
                 if let hex = config.customHexColor {
                     hexInputText = hex
                 }
@@ -71,6 +74,7 @@ struct LockScreenStudioView: View {
                     if let data = try? await newItem?.loadTransferable(type: Data.self),
                        let uiImage = UIImage(data: data) {
                         customLoadedImage = uiImage
+                        WallpaperConfig.saveCustomImage(uiImage)
                         config.preset = .custom
                         config.save()
                     }

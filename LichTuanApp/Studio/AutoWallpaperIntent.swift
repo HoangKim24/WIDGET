@@ -12,6 +12,7 @@ struct UpdateCalendarWallpaperIntent: AppIntent {
     func perform() async throws -> some IntentResult & ReturnsValue<IntentFile> {
         let config = WallpaperConfig.load()
         let events = SharedDataStore.shared.loadEvents()
+        let customImage = WallpaperConfig.loadCustomImage()
 
         // Kích thước chuẩn native iPhone 15: 393 x 852 pt
         let targetSize = CGSize(width: 393, height: 852)
@@ -19,7 +20,7 @@ struct UpdateCalendarWallpaperIntent: AppIntent {
         let renderView = WallpaperCanvasView(
             config: config,
             events: events,
-            customImage: nil
+            customImage: customImage
         )
         .frame(width: targetSize.width, height: targetSize.height)
 

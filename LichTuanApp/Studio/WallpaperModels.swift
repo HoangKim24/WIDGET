@@ -197,6 +197,21 @@ struct WallpaperConfig: Equatable, Codable {
     }
 
     private static let userDefaultsKey = "savedWallpaperConfig"
+    private static var customImageURL: URL? {
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("custom_wallpaper_background.jpg")
+    }
+
+    static func saveCustomImage(_ image: UIImage) {
+        guard let url = customImageURL,
+              let data = image.jpegData(compressionQuality: 0.88) else { return }
+        try? data.write(to: url)
+    }
+
+    static func loadCustomImage() -> UIImage? {
+        guard let url = customImageURL,
+              let data = try? Data(contentsOf: url) else { return nil }
+        return UIImage(data: data)
+    }
 
     static func load() -> WallpaperConfig {
         guard let data = UserDefaults.standard.data(forKey: userDefaultsKey),
