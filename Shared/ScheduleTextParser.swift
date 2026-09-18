@@ -194,13 +194,13 @@ struct ScheduleTextParser {
 
     private static func weekdayName(for offset: Int) -> String {
         switch offset {
-        case 0: return "Thứ 2"
-        case 1: return "Thứ 3"
-        case 2: return "Thứ 4"
-        case 3: return "Thứ 5"
-        case 4: return "Thứ 6"
-        case 5: return "Thứ 7"
-        case 6: return "Chủ Nhật"
+        case 0: return "T2"
+        case 1: return "T3"
+        case 2: return "T4"
+        case 3: return "T5"
+        case 4: return "T6"
+        case 5: return "T7"
+        case 6: return "CN"
         default: return ""
         }
     }
