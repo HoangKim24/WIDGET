@@ -6,6 +6,7 @@ struct ContentView: View {
 
     var body: some View {
         RootTabView(viewModel: viewModel)
+            .preferredColorScheme(.dark)
     }
 }
 

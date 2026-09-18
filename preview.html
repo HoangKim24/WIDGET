@@ -912,7 +912,7 @@
       <div class="panel-title">
         <span>📅</span> Bảng Xếp Lịch Tuần (Thứ 2 – CN)
       </div>
-      <button class="btn-reset-sample" onclick="resetToSample()">Nạp lại mẫu</button>
+      <button class="btn-reset-sample" onclick="clearAllSchedule()">Xóa tất cả</button>
     </div>
 
     <!-- 7 Day Tabs -->
@@ -1150,8 +1150,8 @@
       renderDayEditor();
     }
 
-    function resetToSample() {
-      schedule = JSON.parse(JSON.stringify(defaultSchedule));
+    function clearAllSchedule() {
+      schedule = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
       renderMatrix();
       renderTodayAgenda();
       renderDayEditor();

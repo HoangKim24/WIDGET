@@ -1,7 +1,7 @@
 import SwiftUI
 
 // MARK: - Preset Hình Nền Trẻ Trung & Sang Chảnh
-enum WallpaperPreset: String, CaseIterable, Identifiable {
+enum WallpaperPreset: String, CaseIterable, Identifiable, Codable {
     case sunset = "sunset"
     case aurora = "aurora"
     case obsidian = "obsidian"
@@ -96,7 +96,7 @@ enum WallpaperPreset: String, CaseIterable, Identifiable {
 }
 
 // MARK: - Bố Cục Lịch Tuần 7 Ngày
-enum CalendarLayoutType: String, CaseIterable, Identifiable {
+enum CalendarLayoutType: String, CaseIterable, Identifiable, Codable {
     case rows = "rows"
     case columns = "columns"
     case frostedCard = "frosted"
@@ -121,7 +121,7 @@ enum CalendarLayoutType: String, CaseIterable, Identifiable {
 }
 
 // MARK: - Vị Trí Lịch Trên Màn Hình Khóa
-enum CalendarPosition: String, CaseIterable, Identifiable {
+enum CalendarPosition: String, CaseIterable, Identifiable, Codable {
     case top = "top"
     case center = "center"
     case bottom = "bottom"
@@ -146,7 +146,7 @@ enum CalendarPosition: String, CaseIterable, Identifiable {
 }
 
 // MARK: - Màu Sắc Điểm Nhấn
-enum AccentColorTheme: String, CaseIterable, Identifiable {
+enum AccentColorTheme: String, CaseIterable, Identifiable, Codable {
     case gold = "gold"
     case rose = "rose"
     case cyan = "cyan"
@@ -177,7 +177,7 @@ enum AccentColorTheme: String, CaseIterable, Identifiable {
 }
 
 // MARK: - Cấu Hình Toàn Bộ Hình Nền
-struct WallpaperConfig: Equatable {
+struct WallpaperConfig: Equatable, Codable {
     var preset: WallpaperPreset = .sunset
     var layoutType: CalendarLayoutType = .rows
     var position: CalendarPosition = .top
@@ -186,4 +186,20 @@ struct WallpaperConfig: Equatable {
     var blurRadius: Double = 0.0
     var showEventDots: Bool = true
     var fineTuneYOffset: CGFloat = 0.0
+
+    private static let userDefaultsKey = "savedWallpaperConfig"
+
+    static func load() -> WallpaperConfig {
+        guard let data = UserDefaults.standard.data(forKey: userDefaultsKey),
+              let decoded = try? JSONDecoder().decode(WallpaperConfig.self, from: data) else {
+            return WallpaperConfig()
+        }
+        return decoded
+    }
+
+    func save() {
+        if let data = try? JSONEncoder().encode(self) {
+            UserDefaults.standard.set(data, forKey: WallpaperConfig.userDefaultsKey)
+        }
+    }
 }

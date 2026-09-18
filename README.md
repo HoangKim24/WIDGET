@@ -6,13 +6,12 @@
 
 ## 📱 Điểm Nổi Bật
 
-- **Mô Phỏng Màn Hình Khóa Chân Thực**: Tích hợp mắt xem trước giả lập giao diện iOS (Dynamic Island, Đồng hồ to `09:41`, Ngày tháng, Nút Đèn pin & Camera) giúp căn chỉnh vị trí lịch không bị che khuất.
+- **Tự Động Hóa Màn Hình Khóa (Auto Wallpaper)**: Tích hợp sâu với iOS Shortcuts (Phím Tắt) & AppIntents, giúp iPhone tự động đổi hình nền lịch mỗi ngày (hoặc mỗi khi đóng app) mà không cần thao tác thủ công.
+- **Tối Ưu Chuẩn Toàn Màn Hình iPhone 15**: Hỗ trợ native full-screen 19.5:9 (393 × 852 pt), ôm trọn viền Dynamic Island và đáy máy, không còn dải đen letterbox.
+- **Bảng Tuần 7 Cột & Khung Giờ Chi Tiết**: Xếp lịch trực quan từ Thứ 2 đến Chủ Nhật với màu sắc riêng cho từng công việc.
+- **Dữ Liệu Thật 100%**: Hoạt động hoàn toàn trên sự kiện của người dùng, không chèn dữ liệu mẫu giả.
 - **Kho Nền Thời Thượng**: Tích hợp các tông màu hot trend: *Hoàng Hôn Chill, Cực Quang, Đen Huyền Bí OLED (tiết kiệm pin), Matcha Dịu Êm, Kẹo Ngọt Pastel*.
-- **Tùy Chỉnh Ảnh Cá Nhân**: Chọn ảnh bất kỳ từ máy, tích hợp thanh trượt làm mờ nghệ thuật (Frosted Blur) và lớp phủ tối (Dim Overlay) giúp chữ lịch luôn nổi bật.
-- **3 Kiểu Lịch Tùy Biến**: Lịch tháng tối giản, Lịch tuần năng động và Khung kính mờ sang chảnh (Glassmorphism).
-- **Tích Hợp Quản Lý Sự Kiện**: Dễ dàng thêm việc cần làm, ngày sinh nhật, deadline. Sự kiện tự động đánh dấu chấm màu xinh xắn trên hình nền.
-- **100% Tiếng Việt & Thân Thiện Với Người Non-Tech**: Không thuật ngữ kỹ thuật, không cần tài khoản nhà phát triển trả phí, hoạt động 100% offline.
-- **Xuất Ảnh Chuẩn Retina 3x**: Dùng `ImageRenderer` render hình nền sắc nét độ phân giải cao và lưu vào Photos.
+- **Xuất Ảnh Chuẩn Retina 3x**: Dùng `ImageRenderer` render hình nền sắc nét độ phân giải cao (1179 × 2556 px) và lưu vào Photos.
 
 ---
 
@@ -22,8 +21,9 @@
   - `Studio/`:
     - `LockScreenStudioView.swift`: Màn hình Studio chính với thanh công cụ điều khiển nổi
     - `WallpaperCanvasView.swift`: Canvas render toàn bộ hình nền theo tỉ lệ iPhone 15
-    - `CalendarOverlayViews.swift`: Lưới lịch tháng, lịch tuần và kính mờ
-    - `LockScreenMockOverlay.swift`: Lớp phủ mô phỏng màn hình khóa iOS 17/18
+    - `CalendarOverlayViews.swift`: Bảng tuần 7 cột và danh sách lịch trình hôm nay
+    - `AutoWallpaperIntent.swift`: AppIntent cho phép iOS Shortcuts tự động tạo và thay hình nền ngầm
+    - `AutoWallpaperSetupGuideView.swift`: Giao diện hướng dẫn cài đặt Tự Động Hóa qua Shortcuts
     - `WallpaperModels.swift`: Các cấu hình hình nền, preset và bảng màu
     - `WallpaperSaveManager.swift`: Xử lý kết xuất ảnh siêu nét và lưu vào Album ảnh
   - `RootView.swift`: Điều hướng 2 Tab chính (Thiết Kế & Sự Kiện)

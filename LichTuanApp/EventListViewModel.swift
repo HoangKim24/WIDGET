@@ -14,15 +14,18 @@ final class EventListViewModel: ObservableObject {
     }
 
     func load() {
-        let loaded = store.loadEvents()
-        if loaded.isEmpty {
-            // Nạp dữ liệu mẫu ban đầu để người dùng thấy ngay hiệu ứng lịch
-            let sampleEvents = SharedEventSeed.sampleEvents
-            store.save(events: sampleEvents)
-            events = sampleEvents.sorted { $0.startDate < $1.startDate }
-        } else {
-            events = loaded.sorted { $0.startDate < $1.startDate }
+        let hasCleanedLegacySeedKey = "hasCleanedLegacySeed_v2"
+        let hasCleaned = UserDefaults.standard.bool(forKey: hasCleanedLegacySeedKey)
+        if !hasCleaned {
+            // Tự động dọn sạch các sự kiện mẫu (Do exe, Relax...) đã từng bị nạp trước đây
+            store.clearAllEvents()
+            UserDefaults.standard.set(true, forKey: hasCleanedLegacySeedKey)
+            events = []
+            return
         }
+
+        let loaded = store.loadEvents()
+        events = loaded.sorted { $0.startDate < $1.startDate }
     }
 
     func add(_ event: CalendarEvent) {

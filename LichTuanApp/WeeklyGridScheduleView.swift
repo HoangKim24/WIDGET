@@ -18,6 +18,7 @@ struct WeeklyGridScheduleView: View {
     @State private var selectedCategory: EventCategory = .work
     @State private var isAllDay: Bool = false
     @State private var showResetAlert = false
+    @State private var showAutoGuide = false
 
     // Danh sách 7 ngày trong tuần hiện tại (Thứ 2 -> Chủ Nhật)
     private var currentWeekDays: [Date] {
@@ -37,69 +38,74 @@ struct WeeklyGridScheduleView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                // Nền tối hiện đại
-                Color(red: 0.08, green: 0.09, blue: 0.12)
-                    .ignoresSafeArea()
+            ScrollView {
+                VStack(spacing: 16) {
+                    // MARK: - PHẦN 1: BẢNG TỔNG QUAN 7 CỘT TUẦN (Thứ 2 - CN)
+                    weeklyMatrixOverviewCard
 
-                ScrollView {
-                    VStack(spacing: 20) {
-                        // MARK: - PHẦN 1: BẢNG TỔNG QUAN 7 CỘT TUẦN (Thứ 2 - CN)
-                        weeklyMatrixOverviewCard
+                    // MARK: - PHẦN 2: DANH SÁCH LỊCH TRÌNH ĐÃ XẾP TRONG NGÀY
+                    scheduledSlotsSection
 
-                        // MARK: - PHẦN 2: KHUNG XẾP LỊCH TRÌNH VÀO NGÀY ĐANG CHỌN
-                        scheduleInputCard
+                    // MARK: - PHẦN 3: KHUNG XẾP LỊCH TRÌNH VÀO NGÀY ĐANG CHỌN
+                    scheduleInputCard
 
-                        // MARK: - PHẦN 3: DANH SÁCH LỊCH TRÌNH ĐÃ XẾP TRONG NGÀY
-                        scheduledSlotsSection
-
-                        // MARK: - NÚT XUẤT HÌNH NÈN KHÓA
-                        if let onGoToStudio = onGoToStudio {
-                            Button(action: onGoToStudio) {
-                                HStack(spacing: 8) {
-                                    Image(systemName: "sparkles")
-                                    Text("Xem & Xuất Hình Nền Màn Hình Khóa")
-                                        .font(.system(size: 15, weight: .bold, design: .rounded))
-                                }
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 14)
-                                .background(
-                                    LinearGradient(
-                                        colors: [Color(red: 0.18, green: 0.58, blue: 1.0), Color(red: 0.42, green: 0.36, blue: 0.91)],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
-                                .foregroundStyle(.white)
-                                .clipShape(RoundedRectangle(cornerRadius: 14))
-                                .shadow(color: Color(red: 0.18, green: 0.58, blue: 1.0).opacity(0.35), radius: 10, y: 4)
+                    // MARK: - NÚT XUẤT HÌNH NÈN KHÓA
+                    if let onGoToStudio = onGoToStudio {
+                        Button(action: onGoToStudio) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "sparkles")
+                                Text("Xem & Xuất Hình Nền Màn Hình Khóa")
+                                    .font(.system(size: 15, weight: .bold, design: .rounded))
                             }
-                            .padding(.top, 6)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(
+                                LinearGradient(
+                                    colors: [Color(red: 0.18, green: 0.58, blue: 1.0), Color(red: 0.42, green: 0.36, blue: 0.91)],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .foregroundStyle(.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                            .shadow(color: Color(red: 0.18, green: 0.58, blue: 1.0).opacity(0.35), radius: 10, y: 4)
                         }
+                        .padding(.top, 4)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 12)
-                    .padding(.bottom, 36)
                 }
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .padding(.bottom, 24)
             }
+            .background(Color(red: 0.08, green: 0.09, blue: 0.12).ignoresSafeArea())
             .navigationTitle("Bảng Lịch Tuần")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        showAutoGuide = true
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "bolt.badge.automatic.fill")
+                            Text("Tự động")
+                                .font(.system(size: 12, weight: .semibold))
+                        }
+                        .foregroundStyle(Color(red: 0.28, green: 0.70, blue: 1.0))
+                    }
+                }
+
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
+                        Button {
+                            showAutoGuide = true
+                        } label: {
+                            Label("Cài Đặt Tự Động Hóa", systemImage: "bolt.badge.automatic")
+                        }
+
                         Button(role: .destructive) {
                             viewModel.clearAll()
                         } label: {
                             Label("Xóa Hết Lịch Trình", systemImage: "trash")
-                        }
-
-                        Button {
-                            viewModel.clearAll()
-                            for ev in SharedEventSeed.sampleEvents {
-                                viewModel.add(ev)
-                            }
-                        } label: {
-                            Label("Nạp Lại Lịch Mẫu Chuẩn", systemImage: "arrow.counterclockwise")
                         }
                     } label: {
                         Image(systemName: "ellipsis.circle")
@@ -107,6 +113,9 @@ struct WeeklyGridScheduleView: View {
                             .foregroundStyle(.white.opacity(0.85))
                     }
                 }
+            }
+            .sheet(isPresented: $showAutoGuide) {
+                AutoWallpaperSetupGuideView()
             }
         }
     }

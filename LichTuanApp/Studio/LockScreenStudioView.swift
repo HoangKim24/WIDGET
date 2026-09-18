@@ -24,8 +24,8 @@ struct LockScreenStudioView: View {
     @ObservedObject var viewModel: EventListViewModel
     @StateObject private var saveManager = WallpaperSaveManager()
 
-    @State private var config = WallpaperConfig()
-    @State private var showMockOverlay = true
+    @State private var config = WallpaperConfig.load()
+    @State private var showAutoGuide = false
     @State private var selectedTab: StudioTab = .background
     @State private var selectedPhotoItem: PhotosPickerItem? = nil
     @State private var customLoadedImage: UIImage? = nil
@@ -33,37 +33,39 @@ struct LockScreenStudioView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                // Nền đen xám sang trọng cho Studio
-                Color(red: 0.08, green: 0.08, blue: 0.10)
-                    .ignoresSafeArea()
+            VStack(spacing: 12) {
+                // MARK: - Thanh Trên Cùng: Tiêu Đề & Nút Tự Động Hóa
+                headerBar
 
-                VStack(spacing: 12) {
-                    // MARK: - Thanh Trên Cùng: Tiêu Đề & Nút Mắt Xem Trước
-                    headerBar
+                // MARK: - Khung Canvas iPhone 15 Ở Giữa
+                phonePreviewCanvas
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                    // MARK: - Khung Canvas iPhone 15 Ở Giữa
-                    phonePreviewCanvas
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-                    // MARK: - Bảng Điều Khiển Nổi Phía Dưới
-                    controlPanel
-                }
-                .padding(.top, 4)
-                .padding(.bottom, 8)
+                // MARK: - Bảng Điều Khiển Nổi Phía Dưới
+                controlPanel
             }
+            .padding(.top, 6)
+            .padding(.bottom, 8)
+            .background(Color(red: 0.08, green: 0.08, blue: 0.10).ignoresSafeArea())
             .navigationBarHidden(true)
+            .onChange(of: config) { newConfig in
+                newConfig.save()
+            }
             .onChange(of: selectedPhotoItem) { newItem in
                 Task {
                     if let data = try? await newItem?.loadTransferable(type: Data.self),
                        let uiImage = UIImage(data: data) {
                         customLoadedImage = uiImage
                         config.preset = .custom
+                        config.save()
                     }
                 }
             }
             .sheet(isPresented: $showSuccessTutorial) {
                 successTutorialSheet
+            }
+            .sheet(isPresented: $showAutoGuide) {
+                AutoWallpaperSetupGuideView()
             }
             .onChange(of: saveManager.saveSuccess) { success in
                 if success {
@@ -96,28 +98,26 @@ struct LockScreenStudioView: View {
 
             Spacer()
 
-            // Nút Bật/Tắt Lớp Mô Phỏng Màn Hình Khóa
+            // Nút Tự Động Hóa Màn Hình Khóa (Shortcuts)
             Button {
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-                    showMockOverlay.toggle()
-                }
+                showAutoGuide = true
             } label: {
                 HStack(spacing: 5) {
-                    Image(systemName: showMockOverlay ? "eye.fill" : "eye.slash.fill")
-                    Text(showMockOverlay ? "Mô phỏng: BẬT" : "Mô phỏng: TẮT")
+                    Image(systemName: "bolt.badge.automatic.fill")
+                    Text("Tự Động Hóa")
                         .font(.system(size: 11, weight: .bold))
                 }
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
                 .background(
                     Capsule()
-                        .fill(showMockOverlay ? config.accentColor.color.opacity(0.25) : Color.white.opacity(0.12))
+                        .fill(Color(red: 0.18, green: 0.58, blue: 1.0).opacity(0.22))
                 )
                 .overlay(
                     Capsule()
-                        .stroke(showMockOverlay ? config.accentColor.color.opacity(0.6) : Color.clear, lineWidth: 1)
+                        .stroke(Color(red: 0.18, green: 0.58, blue: 1.0).opacity(0.6), lineWidth: 1)
                 )
-                .foregroundStyle(showMockOverlay ? config.accentColor.color : .white.opacity(0.7))
+                .foregroundStyle(Color(red: 0.28, green: 0.70, blue: 1.0))
             }
         }
         .padding(.horizontal, 16)
@@ -142,8 +142,7 @@ struct LockScreenStudioView: View {
                 WallpaperCanvasView(
                     config: config,
                     events: viewModel.events,
-                    customImage: customLoadedImage,
-                    showMockOverlay: showMockOverlay
+                    customImage: customLoadedImage
                 )
                 .frame(width: 393, height: 852)
                 .scaleEffect(scaleRatio)

@@ -3,7 +3,7 @@ import SwiftUI
 // MARK: - Daily Agenda and Week Schedule (Chuẩn 100% Theo Mẫu Tham Khảo)
 struct DailyAgendaAndWeekScheduleView: View {
     let events: [CalendarEvent]
-    var reminders: [String] = ["Fruits", "Cheese"]
+    var reminders: [String] = []
 
     private let calendar = Calendar.current
 
@@ -16,7 +16,7 @@ struct DailyAgendaAndWeekScheduleView: View {
     }
 
     private var displayEvents: [CalendarEvent] {
-        events.isEmpty ? SharedEventSeed.sampleEvents : events
+        events
     }
 
     private var todayEvents: [CalendarEvent] {
@@ -130,63 +130,35 @@ struct DailyAgendaAndWeekScheduleView: View {
                         }
                     }
                 } else {
-                    // Dữ liệu mẫu đẹp mắt như screenshot nếu hôm nay chưa có sự kiện
-                    HStack(spacing: 16) {
-                        Text("05:30–10:00")
-                            .font(.system(size: 14, weight: .bold, design: .monospaced))
-                            .foregroundStyle(.white)
-                            .frame(width: 95, alignment: .leading)
-                        Text("Wake up and gym")
-                            .font(.system(size: 15, weight: .bold))
-                            .foregroundStyle(Color(red: 0.18, green: 0.58, blue: 1.0))
+                    HStack(spacing: 8) {
+                        Image(systemName: "sun.max.fill")
+                            .font(.system(size: 12))
+                            .foregroundStyle(Color.yellow.opacity(0.8))
+                        Text("Chưa có lịch trình hôm nay")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.6))
                     }
-
-                    HStack(spacing: 16) {
-                        Text("12:00–13:00")
-                            .font(.system(size: 14, weight: .bold, design: .monospaced))
-                            .foregroundStyle(.white)
-                            .frame(width: 95, alignment: .leading)
-                        Text("Lunch with Jo")
-                            .font(.system(size: 15, weight: .bold))
-                            .foregroundStyle(Color(red: 0.28, green: 0.79, blue: 0.89))
-                    }
-
-                    HStack(spacing: 16) {
-                        Text("13:30–14:00")
-                            .font(.system(size: 14, weight: .bold, design: .monospaced))
-                            .foregroundStyle(.white)
-                            .frame(width: 95, alignment: .leading)
-                        Text("Meetings")
-                            .font(.system(size: 15, weight: .bold))
-                            .foregroundStyle(Color(red: 0.98, green: 0.79, blue: 0.14))
-                    }
-
-                    HStack(spacing: 16) {
-                        Text("16:30–17:00")
-                            .font(.system(size: 14, weight: .bold, design: .monospaced))
-                            .foregroundStyle(.white)
-                            .frame(width: 95, alignment: .leading)
-                        Text("Reviewing KPIs")
-                            .font(.system(size: 15, weight: .bold))
-                            .foregroundStyle(Color(red: 0.92, green: 0.30, blue: 0.29))
-                    }
+                    .padding(.vertical, 4)
                 }
             }
         }
     }
 
     // MARK: - Component 3: Reminders (Ghi Chú Nhắc Việc)
+    @ViewBuilder
     private var remindersSection: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Reminders")
-                .font(.system(size: 17, weight: .heavy, design: .rounded))
-                .foregroundStyle(Color(red: 0.95, green: 0.61, blue: 0.07)) // Màu cam giống ảnh
+        if !reminders.isEmpty {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Reminders")
+                    .font(.system(size: 17, weight: .heavy, design: .rounded))
+                    .foregroundStyle(Color(red: 0.95, green: 0.61, blue: 0.07)) // Màu cam giống ảnh
 
-            VStack(alignment: .leading, spacing: 2) {
-                ForEach(reminders, id: \.self) { item in
-                    Text(item)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(.white)
+                VStack(alignment: .leading, spacing: 2) {
+                    ForEach(reminders, id: \.self) { item in
+                        Text(item)
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(.white)
+                    }
                 }
             }
         }

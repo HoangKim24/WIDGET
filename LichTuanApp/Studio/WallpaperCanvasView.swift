@@ -6,7 +6,6 @@ struct WallpaperCanvasView: View {
     let config: WallpaperConfig
     let events: [CalendarEvent]
     var customImage: UIImage? = nil
-    var showMockOverlay: Bool = false
 
     var body: some View {
         GeometryReader { proxy in
@@ -44,13 +43,6 @@ struct WallpaperCanvasView: View {
                     Spacer()
                 }
                 .frame(width: w, height: h)
-
-                // MARK: - Layer 4: Lớp Mô Phỏng Màn Hình Khóa (Nếu bật xem trước)
-                if showMockOverlay {
-                    LockScreenMockOverlay()
-                        .frame(width: w, height: h)
-                        .transition(.opacity)
-                }
             }
             .frame(width: w, height: h)
             .clipped()

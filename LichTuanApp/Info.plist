@@ -18,9 +18,19 @@
     <string>1.0</string>
     <key>CFBundleVersion</key>
     <string>1</string>
+    <key>UILaunchScreen</key>
+    <dict/>
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+    </array>
     <key>NSPhotoLibraryAddUsageDescription</key>
     <string>Ứng dụng cần quyền lưu hình nền lịch màn hình khóa vào Thư viện ảnh của bạn.</string>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>Ứng dụng cần quyền truy cập thư viện để bạn chọn ảnh nền cho lịch.</string>
+    <key>NSCalendarsUsageDescription</key>
+    <string>Ứng dụng cần quyền đọc lịch để tự động hiển thị lịch trình lên màn hình khóa.</string>
+    <key>NSCalendarsFullAccessUsageDescription</key>
+    <string>Ứng dụng cần quyền truy cập lịch để tự động hiển thị lịch trình lên màn hình khóa.</string>
 </dict>
 </plist>

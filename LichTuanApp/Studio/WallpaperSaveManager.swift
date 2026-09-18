@@ -24,8 +24,7 @@ final class WallpaperSaveManager: NSObject, ObservableObject {
         let renderView = WallpaperCanvasView(
             config: config,
             events: events,
-            customImage: customImage,
-            showMockOverlay: false
+            customImage: customImage
         )
         .frame(width: targetSize.width, height: targetSize.height)
 

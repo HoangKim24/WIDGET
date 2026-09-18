@@ -75,10 +75,26 @@ Vì đây là app cá nhân bạn tự cài, iOS yêu cầu bạn xác nhận đ
 
 ---
 
-## 5. Hướng Dẫn Cài Hình Nền Vừa Tạo Làm Màn Hình Khóa iPhone
+## 5. Hướng Dẫn Cài Hình Nền Thủ Công Làm Màn Hình Khóa iPhone
 
 1. Mở ứng dụng **Studio Lịch Khóa**, chọn kiểu nền, kiểu lịch ưng ý rồi bấm nút **Lưu Hình Nền Màn Hình Khóa**.
 2. Mở ứng dụng **Ảnh (Photos)** trên iPhone, mở bức ảnh hình nền vừa được lưu.
 3. Bấm vào nút **Chia sẻ** (biểu tượng hình vuông có mũi tên chỉ lên ở góc trái dưới).
 4. Chọn **Dùng làm hình nền (Use as Wallpaper)**.
 5. Nhấn **Thêm** ở góc trên bên phải > Chọn **Đặt làm cặp hình nền**.
+
+---
+
+## 6. Thiết Lập Tự Động Hóa (Auto Wallpaper Giống LockScreen Calendar Maker)
+
+Để mỗi sáng (hoặc mỗi khi đóng app), màn hình khóa **tự động đổi lịch mới mà không cần thao tác tay**:
+
+1. Mở ứng dụng **Phím Tắt (Shortcuts)** có sẵn trên iPhone của bạn.
+2. Nhấn vào tab **Tự động hóa (Automation)** ở hàng đáy màn hình.
+3. Nhấn dấu **+** ở góc trên (hoặc *Tạo mục tự động hóa cá nhân*).
+4. Chọn **Thời gian trong ngày** (ví dụ: `06:00` sáng) > Chọn **Hàng ngày**.
+5. **Rất quan trọng**: Chọn **Chạy ngay lập tức (Run Immediately)** và tắt mục *Thông báo khi chạy*.
+6. Nhấn **Tiếp** > Bấm **Tác vụ mới**:
+   - Tìm kiếm tác vụ `Cập Nhật Hình Nền Lịch Tuần` của app **Lịch Tuần**.
+   - Bấm tiếp dấu **+** tìm tác vụ hệ thống `Đặt hình nền` (Set Wallpaper) của iOS và chọn áp dụng cho Màn hình khóa.
+7. Xong! Kể từ bây giờ, mỗi sáng thức dậy màn hình khóa iPhone 15 của bạn sẽ tự động nhảy lịch trình mới tinh!
