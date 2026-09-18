@@ -355,10 +355,10 @@ struct LockScreenStudioView: View {
         }
     }
 
-    // MARK: - Tab Vị Trí (Position)
+    // MARK: - Tab Vị Trí (Position & Auto-Fit Calibration)
     private var positionSection: some View {
-        VStack(spacing: 8) {
-            HStack(spacing: 10) {
+        VStack(spacing: 7) {
+            HStack(spacing: 8) {
                 ForEach(CalendarPosition.allCases) { pos in
                     Button {
                         withAnimation(.spring(response: 0.3)) {
@@ -370,22 +370,48 @@ struct LockScreenStudioView: View {
                             .font(.system(size: 11, weight: .semibold))
                             .foregroundStyle(config.position == pos ? Color.black : Color.white)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 38)
+                            .frame(height: 36)
                             .background(
                                 RoundedRectangle(cornerRadius: 10)
                                     .fill(config.position == pos ? config.effectiveAccentColor : Color.white.opacity(0.08))
                             )
                     }
                 }
+
+                // Nút Tự Động Căn Chuẩn
+                Button {
+                    withAnimation(.spring(response: 0.35)) {
+                        config.position = .top
+                        config.fineTuneYOffset = 0
+                    }
+                } label: {
+                    HStack(spacing: 3) {
+                        Image(systemName: "wand.and.stars")
+                            .font(.system(size: 11))
+                        Text("Tự Căn")
+                            .font(.system(size: 11, weight: .bold))
+                    }
+                    .padding(.horizontal, 8)
+                    .frame(height: 36)
+                    .background(Color.blue.opacity(0.25))
+                    .foregroundStyle(Color.cyan)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
             }
 
             // Thanh trượt tinh chỉnh Y (hạ thấp hoặc nâng cao)
-            HStack {
-                Text("Căn chỉnh:")
+            HStack(spacing: 8) {
+                Text("Dịch chuyển:")
                     .font(.system(size: 11))
                     .foregroundStyle(.white.opacity(0.6))
+
                 Slider(value: $config.fineTuneYOffset, in: -40...100, step: 2)
                     .tint(config.effectiveAccentColor)
+
+                Text("\(Int(config.fineTuneYOffset))pt")
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.7))
+                    .frame(width: 36, alignment: .trailing)
             }
             .padding(.horizontal, 4)
         }

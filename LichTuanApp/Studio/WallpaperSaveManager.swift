@@ -18,8 +18,9 @@ final class WallpaperSaveManager: NSObject, ObservableObject {
         saveSuccess = false
         errorMessage = nil
 
-        // Kích thước chuẩn iPhone 15: 393 x 852 điểm
-        let targetSize = CGSize(width: 393, height: 852)
+        // Tự động nhận diện kích thước và độ phân giải chuẩn theo đúng dòng máy iPhone đang chạy
+        let targetSize = UIScreen.main.bounds.size
+        let targetScale = UIScreen.main.scale > 0 ? UIScreen.main.scale : 3.0
 
         let renderView = WallpaperCanvasView(
             config: config,
@@ -29,7 +30,7 @@ final class WallpaperSaveManager: NSObject, ObservableObject {
         .frame(width: targetSize.width, height: targetSize.height)
 
         let renderer = ImageRenderer(content: renderView)
-        renderer.scale = 3.0 // Xuất độ nét Retina 3x (1179 x 2556 px)
+        renderer.scale = targetScale
 
         guard let uiImage = renderer.uiImage else {
             isSaving = false

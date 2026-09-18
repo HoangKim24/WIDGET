@@ -274,45 +274,46 @@ struct DailyAgendaAndWeekScheduleView: View {
         )
     }
 
-    // MARK: - Component: Today
+    // MARK: - Component: Today (Tự động co giãn thông minh)
     private var todayAgendaSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Today")
-                .font(.system(size: 19, weight: .heavy, design: .rounded))
-                .foregroundStyle(accent)
+        VStack(alignment: .leading, spacing: 4) {
+            if !todayEvents.isEmpty {
+                Text("Today")
+                    .font(.system(size: 15, weight: .heavy, design: .rounded))
+                    .foregroundStyle(accent)
 
-            VStack(alignment: .leading, spacing: 5) {
-                if !todayEvents.isEmpty {
-                    ForEach(todayEvents) { event in
-                        HStack(spacing: 14) {
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(todayEvents.prefix(3)) { event in
+                        HStack(spacing: 10) {
                             Text(formatTimeRange(event))
-                                .font(.system(size: 13, weight: .bold, design: .monospaced))
+                                .font(.system(size: 11, weight: .bold, design: .monospaced))
                                 .foregroundStyle(.white)
-                                .frame(width: 95, alignment: .leading)
+                                .frame(width: 88, alignment: .leading)
 
                             Text(event.title)
-                                .font(.system(size: 14, weight: .bold))
+                                .font(.system(size: 12.5, weight: .bold))
                                 .foregroundStyle(eventColor(for: event.category))
                                 .lineLimit(1)
 
                             if event.hasReminder {
                                 Image(systemName: "bell.fill")
-                                    .font(.system(size: 10))
+                                    .font(.system(size: 9))
                                     .foregroundStyle(Color.yellow)
                             }
                         }
                     }
-                } else {
-                    HStack(spacing: 8) {
-                        Image(systemName: "sun.max.fill")
-                            .font(.system(size: 12))
-                            .foregroundStyle(accent)
-                        Text("Không có lịch trình hôm nay")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(.white.opacity(0.6))
-                    }
-                    .padding(.vertical, 3)
                 }
+            } else {
+                // Tự co gọn khi hôm nay trống lịch để không che khuất hình nền
+                HStack(spacing: 6) {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 10))
+                        .foregroundStyle(accent)
+                    Text("Hôm nay thảnh thơi • Không có lịch trình")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.65))
+                }
+                .padding(.top, 2)
             }
         }
     }

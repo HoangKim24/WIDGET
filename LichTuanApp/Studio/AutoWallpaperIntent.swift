@@ -14,8 +14,9 @@ struct UpdateCalendarWallpaperIntent: AppIntent {
         let events = SharedDataStore.shared.loadEvents()
         let customImage = WallpaperConfig.loadCustomImage()
 
-        // Kích thước chuẩn native iPhone 15: 393 x 852 pt
-        let targetSize = CGSize(width: 393, height: 852)
+        // Tự động nhận diện chuẩn xác tỉ lệ và độ phân giải của dòng iPhone hiện tại
+        let targetSize = UIScreen.main.bounds.size
+        let targetScale = UIScreen.main.scale > 0 ? UIScreen.main.scale : 3.0
 
         let renderView = WallpaperCanvasView(
             config: config,
@@ -25,7 +26,7 @@ struct UpdateCalendarWallpaperIntent: AppIntent {
         .frame(width: targetSize.width, height: targetSize.height)
 
         let renderer = ImageRenderer(content: renderView)
-        renderer.scale = 3.0 // Retina 3x (1179 x 2556 px)
+        renderer.scale = targetScale
 
         guard let uiImage = renderer.uiImage,
               let pngData = uiImage.pngData() else {
