@@ -8,20 +8,19 @@ struct WallpaperCanvasView: View {
     var customImage: UIImage? = nil
 
     private func calculateTopPadding(totalHeight h: CGFloat) -> CGFloat {
-        // iPhone 15 native height: 852pt
-        // Khoảng cách an toàn tránh đè đồng hồ (kể cả khi iOS tự zoom nhẹ hình nền):
-        // Vùng an toàn vẽ lịch: ~310pt đến 730pt
+        // iPhone native height:
+        // Căn chuẩn tỷ lệ vàng: nhích lên cao vừa vặn dưới đồng hồ, xóa bỏ khoảng trống thừa
         let baseRatio: CGFloat
         switch config.position {
         case .top:
-            baseRatio = 0.365 // ~311pt trên 852pt (cách xa đáy đồng hồ 13:19 và widget)
+            baseRatio = 0.325 // ~276pt trên 852pt (khoảng cách lý tưởng ngay dưới đồng hồ, không thừa khoảng trống)
         case .center:
-            baseRatio = 0.435 // ~370pt trên 852pt (chính giữa vùng an toàn)
+            baseRatio = 0.405 // ~345pt
         case .bottom:
-            baseRatio = 0.510 // ~435pt trên 852pt (nằm ở nửa dưới màn hình)
+            baseRatio = 0.485 // ~413pt
         }
         let calculated = h * baseRatio + config.fineTuneYOffset
-        let minTop = h * 0.33
+        let minTop = h * 0.28
         let maxTop = h * 0.65
         return max(minTop, min(calculated, maxTop))
     }

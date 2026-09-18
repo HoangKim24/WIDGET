@@ -432,7 +432,7 @@ struct LockScreenStudioView: View {
                     .font(.system(size: 11))
                     .foregroundStyle(.white.opacity(0.6))
 
-                Slider(value: $config.fineTuneYOffset, in: -40...100, step: 2)
+                Slider(value: $config.fineTuneYOffset, in: -80...80, step: 2)
                     .tint(config.effectiveAccentColor)
 
                 Text("\(Int(config.fineTuneYOffset))pt")
