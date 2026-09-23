@@ -32,5 +32,7 @@
     <string>Ứng dụng cần quyền đọc lịch để tự động hiển thị lịch trình lên màn hình khóa.</string>
     <key>NSCalendarsFullAccessUsageDescription</key>
     <string>Ứng dụng cần quyền truy cập lịch để tự động hiển thị lịch trình lên màn hình khóa.</string>
+    <key>NSCameraUsageDescription</key>
+    <string>Ứng dụng cần quyền sử dụng máy ảnh để quét ảnh thời khóa biểu và bảng lịch.</string>
 </dict>
 </plist>

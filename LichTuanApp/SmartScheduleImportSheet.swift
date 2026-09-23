@@ -1,6 +1,7 @@
 import SwiftUI
+import PhotosUI
 
-/// Giao diện nhập lịch trình thông minh từ Zalo / Ghi chú trong 1 chạm
+/// Giao diện nhập lịch trình thông minh từ Zalo / Ghi chú và Quét ảnh thời khóa biểu (OCR)
 struct SmartScheduleImportSheet: View {
     @ObservedObject var viewModel: EventListViewModel
     @Environment(\.dismiss) private var dismiss
@@ -10,6 +11,12 @@ struct SmartScheduleImportSheet: View {
     @State private var isRecurringWeekly: Bool = false
     @State private var hasReminder: Bool = true
     @State private var showCopiedAlert: Bool = false
+
+    // OCR State
+    @State private var selectedPhotoItem: PhotosPickerItem? = nil
+    @State private var isScanningOCR: Bool = false
+    @State private var ocrErrorMessage: String? = nil
+    @State private var showCameraPicker: Bool = false
 
     private let calendar = Calendar.current
 
@@ -31,22 +38,22 @@ struct SmartScheduleImportSheet: View {
                             Image(systemName: "wand.and.stars")
                                 .font(.system(size: 16, weight: .bold))
                                 .foregroundStyle(Color(red: 0.18, green: 0.58, blue: 1.0))
-                            Text("Dán Lịch Trình Từ Zalo / Ghi Chú")
+                            Text("Dán Lịch Hoặc Quét Ảnh Thời Khóa Biểu")
                                 .font(.system(size: 16, weight: .bold, design: .rounded))
                                 .foregroundStyle(.white)
                         }
 
-                        Text("Tự động nhận diện 'Thứ 2, T3, CN, 8h-10h...' để xếp lịch cả tuần trong 1 giây mà không cần gõ từng việc.")
+                        Text("Tự động nhận diện 'Thứ 2, T3, CN, 8h-10h...' từ tin nhắn Zalo, Ghi chú hoặc quét chữ trực tiếp từ ảnh chụp lịch giấy.")
                             .font(.system(size: 12))
                             .foregroundStyle(.white.opacity(0.7))
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 4)
 
-                    // Ô nhập văn bản
+                    // Ô nhập văn bản & Trạng thái đang quét OCR
                     VStack(alignment: .trailing, spacing: 8) {
                         ZStack(alignment: .topLeading) {
-                            if inputText.isEmpty {
+                            if inputText.isEmpty && !isScanningOCR {
                                 Text("Dán tin nhắn Zalo hoặc ghi chú lịch tuần vào đây...\n\nVí dụ:\nThứ 2:\n- 08:00 - 10:00: Đi làm\n- 14:00 - 16:00: Họp dự án\nT3:\n- 07:30 - 09:00: Tập gym\n- 18:00 - 20:00: Học tiếng Anh\nCN:\n- Cả ngày: Đi chơi với gia đình")
                                     .font(.system(size: 13))
                                     .foregroundStyle(.white.opacity(0.35))
@@ -64,6 +71,21 @@ struct SmartScheduleImportSheet: View {
                                 .onChange(of: inputText) { newValue in
                                     runParser(on: newValue)
                                 }
+
+                            if isScanningOCR {
+                                RoundedRectangle(cornerRadius: 14)
+                                    .fill(Color.black.opacity(0.75))
+                                    .overlay(
+                                        VStack(spacing: 12) {
+                                            ProgressView()
+                                                .tint(.cyan)
+                                                .scaleEffect(1.2)
+                                            Text("Đang quét chữ từ hình ảnh...")
+                                                .font(.system(size: 13, weight: .semibold))
+                                                .foregroundStyle(.white)
+                                        }
+                                    )
+                            }
                         }
                         .background(
                             RoundedRectangle(cornerRadius: 14)
@@ -74,23 +96,89 @@ struct SmartScheduleImportSheet: View {
                                 .stroke(Color.white.opacity(0.12), lineWidth: 1)
                         )
 
-                        // Nút Dán nhanh từ bộ nhớ tạm
-                        Button {
-                            if let clip = UIPasteboard.general.string, !clip.isEmpty {
-                                inputText = clip
-                                runParser(on: clip)
+                        // Thông báo lỗi OCR nếu có
+                        if let error = ocrErrorMessage {
+                            HStack {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .foregroundStyle(.yellow)
+                                Text(error)
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.white.opacity(0.8))
+                                Spacer()
+                                Button("Đóng") {
+                                    ocrErrorMessage = nil
+                                }
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(.cyan)
                             }
-                        } label: {
-                            HStack(spacing: 6) {
-                                Image(systemName: "doc.on.clipboard.fill")
-                                Text("Dán từ bộ nhớ tạm")
-                                    .font(.system(size: 12, weight: .semibold))
+                            .padding(8)
+                            .background(Color.yellow.opacity(0.15))
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                        }
+
+                        // Hàng nút tiện ích: Dán nhanh & Quét ảnh OCR
+                        HStack(spacing: 8) {
+                            // Nút Dán nhanh
+                            Button {
+                                if let clip = UIPasteboard.general.string, !clip.isEmpty {
+                                    inputText = clip
+                                    runParser(on: clip)
+                                }
+                            } label: {
+                                HStack(spacing: 5) {
+                                    Image(systemName: "doc.on.clipboard.fill")
+                                    Text("Dán chữ")
+                                        .font(.system(size: 11.5, weight: .semibold))
+                                }
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 7)
+                                .background(Color(red: 0.18, green: 0.58, blue: 1.0).opacity(0.2))
+                                .foregroundStyle(Color(red: 0.28, green: 0.70, blue: 1.0))
+                                .clipShape(Capsule())
                             }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 7)
-                            .background(Color(red: 0.18, green: 0.58, blue: 1.0).opacity(0.2))
-                            .foregroundStyle(Color(red: 0.28, green: 0.70, blue: 1.0))
-                            .clipShape(Capsule())
+
+                            // Nút Quét từ Thư viện ảnh (PhotosPicker)
+                            PhotosPicker(
+                                selection: $selectedPhotoItem,
+                                matching: .images,
+                                photoLibrary: .shared()
+                            ) {
+                                HStack(spacing: 5) {
+                                    Image(systemName: "photo.badge.magnifyingglass")
+                                    Text("Quét từ ảnh")
+                                        .font(.system(size: 11.5, weight: .semibold))
+                                }
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 7)
+                                .background(Color.purple.opacity(0.25))
+                                .foregroundStyle(Color.purple.opacity(0.95))
+                                .clipShape(Capsule())
+                            }
+                            .onChange(of: selectedPhotoItem) { newItem in
+                                if let item = newItem {
+                                    processPhotoItem(item)
+                                }
+                            }
+
+                            // Nút Chụp ảnh bằng Camera
+                            if UIImagePickerController.isSourceTypeAvailable(.camera) {
+                                Button {
+                                    showCameraPicker = true
+                                } label: {
+                                    HStack(spacing: 5) {
+                                        Image(systemName: "camera.fill")
+                                        Text("Chụp ảnh")
+                                            .font(.system(size: 11.5, weight: .semibold))
+                                    }
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 7)
+                                    .background(Color.orange.opacity(0.25))
+                                    .foregroundStyle(Color.orange)
+                                    .clipShape(Capsule())
+                                }
+                            }
+
+                            Spacer()
                         }
                     }
 
@@ -226,6 +314,62 @@ struct SmartScheduleImportSheet: View {
                     .foregroundStyle(.white)
                 }
             }
+            .sheet(isPresented: $showCameraPicker) {
+                CameraCaptureView { image in
+                    processImage(image)
+                }
+            }
+        }
+    }
+
+    private func processPhotoItem(_ item: PhotosPickerItem) {
+        isScanningOCR = true
+        ocrErrorMessage = nil
+
+        Task {
+            do {
+                guard let data = try await item.loadTransferable(type: Data.self),
+                      let image = UIImage(data: data) else {
+                    await MainActor.run {
+                        self.ocrErrorMessage = "Không thể đọc dữ liệu ảnh."
+                        self.isScanningOCR = false
+                    }
+                    return
+                }
+
+                let text = try await ScheduleOCRScanner.recognizeText(from: image)
+                await MainActor.run {
+                    self.inputText = text
+                    self.runParser(on: text)
+                    self.isScanningOCR = false
+                }
+            } catch {
+                await MainActor.run {
+                    self.ocrErrorMessage = error.localizedDescription
+                    self.isScanningOCR = false
+                }
+            }
+        }
+    }
+
+    private func processImage(_ image: UIImage) {
+        isScanningOCR = true
+        ocrErrorMessage = nil
+
+        Task {
+            do {
+                let text = try await ScheduleOCRScanner.recognizeText(from: image)
+                await MainActor.run {
+                    self.inputText = text
+                    self.runParser(on: text)
+                    self.isScanningOCR = false
+                }
+            } catch {
+                await MainActor.run {
+                    self.ocrErrorMessage = error.localizedDescription
+                    self.isScanningOCR = false
+                }
+            }
         }
     }
 
@@ -237,7 +381,6 @@ struct SmartScheduleImportSheet: View {
         let monday = currentMonday
 
         for item in parsedItems where item.isSelected {
-            // Tính ngày cụ thể dựa vào Thứ (dayOffset)
             guard let targetDate = calendar.date(byAdding: .day, value: item.dayOffset, to: monday) else { continue }
 
             let start = calendar.date(
@@ -282,6 +425,44 @@ struct SmartScheduleImportSheet: View {
         case .study: return Color(red: 0.98, green: 0.79, blue: 0.14)
         case .family: return Color(red: 0.91, green: 0.26, blue: 0.58)
         case .other: return Color(red: 0.42, green: 0.36, blue: 0.91)
+        }
+    }
+}
+
+/// Giao diện máy ảnh chụp thời khóa biểu
+struct CameraCaptureView: UIViewControllerRepresentable {
+    var onImageCaptured: (UIImage) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.sourceType = .camera
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+
+    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+        let parent: CameraCaptureView
+
+        init(_ parent: CameraCaptureView) {
+            self.parent = parent
+        }
+
+        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
+            if let image = info[.originalImage] as? UIImage {
+                parent.onImageCaptured(image)
+            }
+            parent.dismiss()
+        }
+
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            parent.dismiss()
         }
     }
 }

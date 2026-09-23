@@ -103,4 +103,49 @@ final class CalendarEventTests: XCTestCase {
         XCTAssertTrue(last.isAllDay)
         XCTAssertEqual(last.title, "Nghỉ ngơi")
     }
+
+    func testICSGeneration() {
+        let event = CalendarEvent(
+            title: "Họp Định Kỳ",
+            startDate: Date(timeIntervalSince1970: 1_700_000_000),
+            endDate: Date(timeIntervalSince1970: 1_700_003_600),
+            category: .work,
+            isAllDay: false,
+            isRecurringWeekly: true
+        )
+
+        let ics = CalendarExportManager.generateICS(from: [event])
+        XCTAssertTrue(ics.contains("BEGIN:VCALENDAR"))
+        XCTAssertTrue(ics.contains("END:VCALENDAR"))
+        XCTAssertTrue(ics.contains("BEGIN:VEVENT"))
+        XCTAssertTrue(ics.contains("SUMMARY:Họp Định Kỳ"))
+        XCTAssertTrue(ics.contains("RRULE:FREQ=WEEKLY"))
+        XCTAssertTrue(ics.contains("END:VEVENT"))
+    }
+
+    func testBackupJSONFileCreationAndRestore() throws {
+        let events = [
+            CalendarEvent(
+                title: "Tập Gym",
+                startDate: Date(timeIntervalSince1970: 10_000),
+                endDate: Date(timeIntervalSince1970: 13_600),
+                category: .health,
+                isAllDay: false,
+                isRecurringWeekly: false,
+                hasReminder: true
+            )
+        ]
+
+        let fileURL = try XCTUnwrap(CalendarExportManager.createTempBackupJSONFile(from: events))
+        defer { try? FileManager.default.removeItem(at: fileURL) }
+
+        let data = try Data(contentsOf: fileURL)
+        let jsonStr = try XCTUnwrap(String(data: data, encoding: .utf8))
+        let restored = try EventCoding.events(fromJSON: jsonStr)
+
+        XCTAssertEqual(restored.count, 1)
+        XCTAssertEqual(restored[0].title, "Tập Gym")
+        XCTAssertEqual(restored[0].category, .health)
+        XCTAssertEqual(restored[0].hasReminder, true)
+    }
 }

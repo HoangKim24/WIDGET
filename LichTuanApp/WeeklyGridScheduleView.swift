@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// Bảng Lưới Tuần Trực Tiếp Trong App - Nơi người dùng xếp lịch trình 7 ngày (Thứ 2 đến Chủ Nhật)
 /// với các ô chọn giờ cụ thể (Giờ bắt đầu - Giờ kết thúc), màu sắc và công việc.
@@ -28,6 +29,12 @@ struct WeeklyGridScheduleView: View {
     @State private var pickerSelectedDate: Date = Date()
     @State private var showCopiedAlert = false
     @State private var copiedCount: Int = 0
+
+    // Đồng bộ & Sao lưu
+    @State private var showDeviceCalendarImport = false
+    @State private var showRestorePicker = false
+    @State private var restoreAlertMessage: String? = nil
+    @State private var showRestoreAlert = false
 
     // Quản lý tuần (0 = tuần này, +1 = tuần sau, +2, +3... và -1 = tuần trước)
     @State private var weekOffset: Int = 0
@@ -111,35 +118,67 @@ struct WeeklyGridScheduleView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
-                        Button {
-                            triggerShortcutsUpdate()
-                        } label: {
-                            Label("Cập Nhật Màn Hình Khóa Ngay", systemImage: "bolt.fill")
+                        Section("Đồng Bộ & Nhập Lịch") {
+                            Button {
+                                showDeviceCalendarImport = true
+                            } label: {
+                                Label("Đồng Bộ Từ Lịch iPhone", systemImage: "calendar.badge.clock")
+                            }
+
+                            Button {
+                                showImportSheet = true
+                            } label: {
+                                Label("Dán Lịch & Quét Ảnh (OCR)", systemImage: "wand.and.stars")
+                            }
+
+                            Button {
+                                copyCurrentWeekToNextWeek()
+                            } label: {
+                                Label("Sao Chép Lịch Sang Tuần Sau", systemImage: "doc.on.doc")
+                            }
                         }
 
-                        Button {
-                            showAutoGuide = true
-                        } label: {
-                            Label("Cài Đặt Tự Động Hóa", systemImage: "bolt.badge.automatic")
+                        Section("Xuất File & Sao Lưu") {
+                            Button {
+                                exportCalendarICS()
+                            } label: {
+                                Label("Xuất File Lịch (.ics)", systemImage: "square.and.arrow.up")
+                            }
+
+                            Button {
+                                exportBackupJSON()
+                            } label: {
+                                Label("Sao Lưu Dữ Liệu (.json)", systemImage: "arrow.down.doc")
+                            }
+
+                            Button {
+                                showRestorePicker = true
+                            } label: {
+                                Label("Khôi Phục Dữ Liệu (.json)", systemImage: "arrow.clockwise.icloud")
+                            }
                         }
 
-                        Button {
-                            copyCurrentWeekToNextWeek()
-                        } label: {
-                            Label("Sao Chép Lịch Sang Tuần Sau", systemImage: "doc.on.doc")
+                        Section("Màn Hình Khóa") {
+                            Button {
+                                triggerShortcutsUpdate()
+                            } label: {
+                                Label("Cập Nhật Màn Hình Khóa Ngay", systemImage: "bolt.fill")
+                            }
+
+                            Button {
+                                showAutoGuide = true
+                            } label: {
+                                Label("Cài Đặt Tự Động Hóa", systemImage: "bolt.badge.automatic")
+                            }
                         }
 
-                        Button {
-                            showImportSheet = true
-                        } label: {
-                            Label("Dán Lịch nhanh ", systemImage: "doc.on.clipboard")
-                        }
-
-                        Button(role: .destructive) {
-                            NotificationManager.shared.cancelAllNotifications()
-                            viewModel.clearAll()
-                        } label: {
-                            Label("Xóa Hết Lịch Trình", systemImage: "trash")
+                        Section {
+                            Button(role: .destructive) {
+                                NotificationManager.shared.cancelAllNotifications()
+                                viewModel.clearAll()
+                            } label: {
+                                Label("Xóa Hết Lịch Trình", systemImage: "trash")
+                            }
                         }
                     } label: {
                         Image(systemName: "ellipsis.circle")
@@ -154,6 +193,12 @@ struct WeeklyGridScheduleView: View {
             .sheet(isPresented: $showImportSheet) {
                 SmartScheduleImportSheet(viewModel: viewModel)
             }
+            .sheet(isPresented: $showDeviceCalendarImport) {
+                DeviceCalendarImportSheet(
+                    viewModel: viewModel,
+                    weekDays: currentWeekDays
+                )
+            }
             .sheet(isPresented: $showDatePickerSheet) {
                 MonthWeekDatePickerSheet(
                     selectedDate: $pickerSelectedDate,
@@ -161,6 +206,18 @@ struct WeeklyGridScheduleView: View {
                         jumpToDate(picked)
                     }
                 )
+            }
+            .fileImporter(
+                isPresented: $showRestorePicker,
+                allowedContentTypes: [.json],
+                allowsMultipleSelection: false
+            ) { result in
+                handleRestoreFile(result: result)
+            }
+            .alert("Khôi Phục Dữ Liệu", isPresented: $showRestoreAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(restoreAlertMessage ?? "")
             }
             .alert("Sao Chép Thành Công", isPresented: $showCopiedAlert) {
                 Button("OK", role: .cancel) { }
@@ -975,6 +1032,37 @@ struct WeeklyGridScheduleView: View {
                     }
                 }
             }
+        }
+    }
+
+    private func exportCalendarICS() {
+        guard let url = CalendarExportManager.createTempICSFile(from: viewModel.events) else { return }
+        CalendarExportManager.presentShareSheet(items: [url])
+    }
+
+    private func exportBackupJSON() {
+        guard let url = CalendarExportManager.createTempBackupJSONFile(from: viewModel.events) else { return }
+        CalendarExportManager.presentShareSheet(items: [url])
+    }
+
+    private func handleRestoreFile(result: Result<[URL], Error>) {
+        do {
+            guard let selectedURL = try result.get().first else { return }
+            if selectedURL.startAccessingSecurityScopedResource() {
+                defer { selectedURL.stopAccessingSecurityScopedResource() }
+                let data = try Data(contentsOf: selectedURL)
+                guard let jsonString = String(data: data, encoding: .utf8) else {
+                    restoreAlertMessage = "Không thể đọc định dạng file sao lưu."
+                    showRestoreAlert = true
+                    return
+                }
+                let count = try viewModel.restoreEvents(from: jsonString)
+                restoreAlertMessage = "Khôi phục thành công \(count) sự kiện từ file sao lưu!"
+                showRestoreAlert = true
+            }
+        } catch {
+            restoreAlertMessage = "Lỗi khôi phục: \(error.localizedDescription)"
+            showRestoreAlert = true
         }
     }
 }

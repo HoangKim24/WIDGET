@@ -77,4 +77,28 @@ final class EventListViewModel: ObservableObject {
         store.clearAllEvents()
         events = []
     }
+
+    /// Nạp hàng loạt sự kiện mới (từ Lịch iPhone, OCR hoặc file nhập)
+    func importEvents(_ newEvents: [CalendarEvent]) {
+        for ev in newEvents {
+            store.add(event: ev)
+            if ev.hasReminder {
+                NotificationManager.shared.scheduleNotification(for: ev)
+            }
+        }
+        load()
+    }
+
+    /// Khôi phục dữ liệu từ chuỗi JSON sao lưu
+    func restoreEvents(from jsonString: String) throws -> Int {
+        let restored = try EventCoding.events(fromJSON: jsonString)
+        for ev in restored {
+            store.add(event: ev)
+            if ev.hasReminder {
+                NotificationManager.shared.scheduleNotification(for: ev)
+            }
+        }
+        load()
+        return restored.count
+    }
 }
