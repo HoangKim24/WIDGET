@@ -1,5 +1,6 @@
 import UIKit
 import Vision
+import ImageIO
 
 /// Bộ quét chữ OCR từ hình ảnh thời khóa biểu / bảng lịch sử dụng Apple Vision Framework
 enum ScheduleOCRScanner {

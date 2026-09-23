@@ -20,7 +20,7 @@ final class DeviceCalendarSyncManager: ObservableObject {
     func checkCurrentAuthorization() {
         let status = EKEventStore.authorizationStatus(for: .event)
         if #available(iOS 17.0, *) {
-            isAuthorized = (status == .fullAccess || status == .authorized)
+            isAuthorized = (status.rawValue == 3 || status == .fullAccess || status == .authorized)
         } else {
             isAuthorized = (status == .authorized)
         }
@@ -39,17 +39,13 @@ final class DeviceCalendarSyncManager: ObservableObject {
                 return false
             }
         } else {
-            return await withCheckedContinuation { continuation in
-                eventStore.requestAccess(to: .event) { [weak self] granted, error in
-                    Task { @MainActor in
-                        if let error = error {
-                            self?.lastErrorMessage = error.localizedDescription
-                        }
-                        self?.isAuthorized = granted
-                        continuation.resume(returning: granted)
-                    }
+            let granted: Bool = await withCheckedContinuation { continuation in
+                eventStore.requestAccess(to: .event) { granted, _ in
+                    continuation.resume(returning: granted)
                 }
             }
+            self.isAuthorized = granted
+            return granted
         }
     }
 

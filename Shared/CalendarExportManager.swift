@@ -41,7 +41,7 @@ enum CalendarExportManager {
 
             let escapedSummary = escapeICS(ev.title)
             lines.append("SUMMARY:\(escapedSummary)")
-            lines.append("DESCRIPTION:Danh mục: \(ev.category.title)")
+            lines.append("DESCRIPTION:Danh mục: \(ev.category.displayName)")
 
             if ev.isRecurringWeekly {
                 if let recurrenceEnd = ev.recurrenceEndDate {

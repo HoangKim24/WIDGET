@@ -432,7 +432,7 @@ struct SmartScheduleImportSheet: View {
 /// Giao diện máy ảnh chụp thời khóa biểu
 struct CameraCaptureView: UIViewControllerRepresentable {
     var onImageCaptured: (UIImage) -> Void
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\.dismiss) var dismiss
 
     func makeUIViewController(context: Context) -> UIImagePickerController {
         let picker = UIImagePickerController()
@@ -444,25 +444,27 @@ struct CameraCaptureView: UIViewControllerRepresentable {
     func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(self)
+        Coordinator(dismiss: dismiss, onImageCaptured: onImageCaptured)
     }
 
     class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
-        let parent: CameraCaptureView
+        let dismiss: DismissAction
+        let onImageCaptured: (UIImage) -> Void
 
-        init(_ parent: CameraCaptureView) {
-            self.parent = parent
+        init(dismiss: DismissAction, onImageCaptured: @escaping (UIImage) -> Void) {
+            self.dismiss = dismiss
+            self.onImageCaptured = onImageCaptured
         }
 
         func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
             if let image = info[.originalImage] as? UIImage {
-                parent.onImageCaptured(image)
+                onImageCaptured(image)
             }
-            parent.dismiss()
+            dismiss()
         }
 
         func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-            parent.dismiss()
+            dismiss()
         }
     }
 }
