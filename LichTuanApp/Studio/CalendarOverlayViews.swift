@@ -170,7 +170,7 @@ struct DailyAgendaAndWeekScheduleView: View {
 
                 Spacer()
 
-                Text("Hôm nay: \(vietnameseShortDay(for: Date()))")
+                Text("Hôm nay: \(Date().vietnameseWeekdayShort)")
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(.white.opacity(0.75))
             }
@@ -211,7 +211,7 @@ struct DailyAgendaAndWeekScheduleView: View {
             ForEach(currentWeekDays, id: \.self) { day in
                 let isToday = calendar.isDateInToday(day)
                 let dayNum = calendar.component(.day, from: day)
-                let dayName = vietnameseShortDay(for: day)
+                let dayName = day.vietnameseWeekdayShort
                 let dayEvents = events(for: day)
 
                 VStack(spacing: 3) {

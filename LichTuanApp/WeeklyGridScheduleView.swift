@@ -371,7 +371,6 @@ struct WeeklyGridScheduleView: View {
                 ForEach(currentWeekDays, id: \.self) { day in
                     let isSelected = calendar.isDate(day, inSameDayAs: selectedDate)
                     let isToday = calendar.isDateInToday(day)
-                    let dayWeekday = calendar.component(.weekday, from: day)
                     let dayEvents = viewModel.events
                         .filter { $0.occurs(on: day, calendar: calendar) }
                         .sorted { $0.startDate < $1.startDate }
@@ -477,7 +476,7 @@ struct WeeklyGridScheduleView: View {
                     .font(.system(size: 15, weight: .bold))
                     .foregroundStyle(Color(red: 0.18, green: 0.58, blue: 1.0))
 
-                Text("Xếp Việc Vào \(vietnameseFullDate(selectedDate))")
+                Text("Xếp Việc Vào \(selectedDate.vietnameseFullDateString)")
                     .font(.system(size: 15, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
 
