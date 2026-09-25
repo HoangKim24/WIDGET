@@ -21,40 +21,58 @@ struct ScheduleTextParser {
     /// Phân tích văn bản tự do thành danh sách các mục sự kiện
     static func parse(text: String, referenceDate: Date = Date()) -> [ParsedItem] {
         var results: [ParsedItem] = []
-        let rawClauses = splitIntoClauses(text)
-
+        let lines = text.components(separatedBy: .newlines)
         var lastEncounteredDays: [Int] = []
 
-        for clause in rawClauses {
-            let trimmed = clause.trimmingCharacters(in: .whitespacesAndNewlines)
-            if trimmed.isEmpty { continue }
+        for line in lines {
+            let trimmedLine = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmedLine.isEmpty { continue }
 
-            // 1. Nhận diện các ngày trong mệnh đề (hỗ trợ cả nhóm ngày 2-4-6, 3-5-7, t7-cn)
-            let detectedDays = detectDaysOfWeek(in: trimmed)
-
+            let detectedDays = detectDaysOfWeek(in: trimmedLine)
             if !detectedDays.isEmpty {
                 lastEncounteredDays = detectedDays
+                if isDayHeaderOnly(trimmedLine) {
+                    continue
+                }
             }
 
-            let targetDays = !detectedDays.isEmpty ? detectedDays : lastEncounteredDays
-            if targetDays.isEmpty { continue }
+            // Tách theo dấu phẩy hoặc chấm phẩy nếu có nhiều việc trên cùng dòng (bảo vệ cụm số như 2,4,6)
+            var normalized = trimmedLine
+            normalized = normalized.replacingOccurrences(of: #"(?<=\d),\s*(?=\d)"#, with: "_", options: .regularExpression)
 
-            // 2. Bóc tách giờ và tiêu đề sự kiện
-            if let details = extractTimeAndTitle(from: trimmed) {
-                for day in targetDays {
-                    results.append(
-                        ParsedItem(
-                            dayOffset: day,
-                            dayName: DateTimeUtils.vietnameseWeekdayName(for: day),
-                            startHour: details.sH,
-                            startMinute: details.sM,
-                            endHour: details.eH,
-                            endMinute: details.eM,
-                            title: details.title,
-                            category: EventCategory.infer(from: details.title),
-                            isAllDay: details.isAllDay
+            let separators = CharacterSet(charactersIn: ";,")
+            let parts = normalized.components(separatedBy: separators)
+
+            for part in parts {
+                let restored = part.replacingOccurrences(of: "_", with: ",")
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                if restored.isEmpty { continue }
+
+                let partDays = detectDaysOfWeek(in: restored)
+                if !partDays.isEmpty {
+                    lastEncounteredDays = partDays
+                }
+                if isDayHeaderOnly(restored) { continue }
+
+                let targetDays = !partDays.isEmpty ? partDays : lastEncounteredDays
+                if targetDays.isEmpty { continue }
+
+                if let details = extractTimeAndTitle(from: restored) {
+                    for day in targetDays {
+                        results.append(
+                            ParsedItem(
+                                dayOffset: day,
+                                dayName: DateTimeUtils.vietnameseWeekdayName(for: day),
+                                startHour: details.sH,
+                                startMinute: details.sM,
+                                endHour: details.eH,
+                                endMinute: details.eM,
+                                title: details.title,
+                                category: EventCategory.infer(from: details.title),
+                                isAllDay: details.isAllDay
+                            )
                         )
-                    )
+                    }
                 }
             }
         }
@@ -71,38 +89,7 @@ struct ScheduleTextParser {
         }
     }
 
-    // MARK: - 1. Tách Câu & Mệnh Đề Tự Nhiên
-    private static func splitIntoClauses(_ text: String) -> [String] {
-        var clauses: [String] = []
-
-        // Tách theo dòng trước
-        let lines = text.components(separatedBy: .newlines)
-        for line in lines {
-            let trimmedLine = line.trimmingCharacters(in: .whitespacesAndNewlines)
-            if trimmedLine.isEmpty { continue }
-
-            // Tách tiếp theo dấu chấm phẩy, dấu gạch nối đầu dòng, hoặc dấu phẩy (nếu không nằm trong cụm số 2,4,6)
-            // Thay thế "2, 4, 6" tạm thời để không bị ngắt
-            var normalized = trimmedLine
-            normalized = normalized.replacingOccurrences(of: #"(?<=\d),\s*(?=\d)"#, with: "_", options: .regularExpression)
-
-            // Tách theo dấu phẩy, chấm, chấm phẩy, hoặc " ngoài ra ", " rồi "
-            let separators = CharacterSet(charactersIn: ";.,\n")
-            let parts = normalized.components(separatedBy: separators)
-
-            for part in parts {
-                let restored = part.replacingOccurrences(of: "_", with: ",")
-                    .trimmingCharacters(in: .whitespacesAndNewlines)
-                if !restored.isEmpty {
-                    clauses.append(restored)
-                }
-            }
-        }
-
-        return clauses
-    }
-
-    // MARK: - 2. Nhận Diện Nhóm Ngày (2-4-6, 3-5-7, Cuối Tuần...)
+    // MARK: - 1. Nhận Diện Nhóm Ngày (2-4-6, 3-5-7, Cuối Tuần...)
     static func detectDaysOfWeek(in text: String) -> [Int] {
         let lower = text.lowercased()
 
@@ -188,8 +175,8 @@ struct ScheduleTextParser {
         }
 
         // 2. Mẫu khung giờ có khoảng: ví dụ 08:00 - 10:00, 8h-10h, 8h30 - 10h15, 6h đến 7h, 6g - 7g
-        let rangePattern = #"(\d{1,2})[hH:gG]?(\d{2})?\s*[-–—đếnto~]+\s*(\d{1,2})[hH:gG]?(\d{2})?"#
-        if let regex = try? NSRegularExpression(pattern: rangePattern, options: []) {
+        let rangePattern = #"(?:từ\s+)?(\b\d{1,2})(?:[hHgG](\d{2})?|:(\d{2}))?\s*(?:[-–—~]|đến|tới|to)\s*(\b\d{1,2})(?:[hHgG](\d{2})?|:(\d{2}))"#
+        if let regex = try? NSRegularExpression(pattern: rangePattern, options: [.caseInsensitive]) {
             let nsText = text as NSString
             if let match = regex.firstMatch(in: text, options: [], range: NSRange(location: 0, length: nsText.length)) {
                 var sH = 8
@@ -202,12 +189,16 @@ struct ScheduleTextParser {
                 }
                 if match.range(at: 2).location != NSNotFound {
                     sM = Int(nsText.substring(with: match.range(at: 2))) ?? 0
-                }
-                if match.range(at: 3).location != NSNotFound {
-                    eH = Int(nsText.substring(with: match.range(at: 3))) ?? (sH + 1)
+                } else if match.range(at: 3).location != NSNotFound {
+                    sM = Int(nsText.substring(with: match.range(at: 3))) ?? 0
                 }
                 if match.range(at: 4).location != NSNotFound {
-                    eM = Int(nsText.substring(with: match.range(at: 4))) ?? 0
+                    eH = Int(nsText.substring(with: match.range(at: 4))) ?? (sH + 1)
+                }
+                if match.range(at: 5).location != NSNotFound {
+                    eM = Int(nsText.substring(with: match.range(at: 5))) ?? 0
+                } else if match.range(at: 6).location != NSNotFound {
+                    eM = Int(nsText.substring(with: match.range(at: 6))) ?? 0
                 }
 
                 // Điều chỉnh buổi tối / chiều nếu có từ khóa
@@ -228,7 +219,7 @@ struct ScheduleTextParser {
         }
 
         // 3. Mẫu một mốc giờ duy nhất: ví dụ "19h", "lúc 7h", "19:30", "8h sáng"
-        let singlePattern = #"(?:lúc\s+|vào\s+)?(\b\d{1,2})[hH:gG](\d{2})?|\b(\d{1,2}):(\d{2})\b"#
+        let singlePattern = #"(?:lúc\s+|vào\s+)?(?:\b(\d{1,2})[hHgG](\d{2})?|\b(\d{1,2}):(\d{2})\b)"#
         if let regex = try? NSRegularExpression(pattern: singlePattern, options: [.caseInsensitive]) {
             let nsText = text as NSString
             if let match = regex.firstMatch(in: text, options: [], range: NSRange(location: 0, length: nsText.length)) {
@@ -237,14 +228,14 @@ struct ScheduleTextParser {
 
                 if match.range(at: 1).location != NSNotFound {
                     sH = Int(nsText.substring(with: match.range(at: 1))) ?? 8
+                    if match.range(at: 2).location != NSNotFound {
+                        sM = Int(nsText.substring(with: match.range(at: 2))) ?? 0
+                    }
                 } else if match.range(at: 3).location != NSNotFound {
                     sH = Int(nsText.substring(with: match.range(at: 3))) ?? 8
-                }
-
-                if match.range(at: 2).location != NSNotFound {
-                    sM = Int(nsText.substring(with: match.range(at: 2))) ?? 0
-                } else if match.range(at: 4).location != NSNotFound {
-                    sM = Int(nsText.substring(with: match.range(at: 4))) ?? 0
+                    if match.range(at: 4).location != NSNotFound {
+                        sM = Int(nsText.substring(with: match.range(at: 4))) ?? 0
+                    }
                 }
 
                 sH = adjustForPeriod(sH, in: lower)
@@ -278,6 +269,19 @@ struct ScheduleTextParser {
         return nil
     }
 
+    /// Kiểm tra xem một dòng hay mệnh đề chỉ là tiêu đề ngày độc lập (ví dụ "Thứ 2:", "T3:", "CN:")
+    static func isDayHeaderOnly(_ text: String) -> Bool {
+        let cleaned = text.lowercased()
+            .components(separatedBy: CharacterSet(charactersIn: ":-–—*•;, \t\r\n"))
+            .joined()
+        let dayHeaders: Set<String> = [
+            "thứ2", "thứhai", "thứ3", "thứba", "thứ4", "thứtư", "thứ5", "thứnăm", "thứ6", "thứsáu", "thứ7", "thứbảy", "chủnhật",
+            "thu2", "thuhai", "thu3", "thuba", "thu4", "thutu", "thu5", "thunam", "thu6", "thusau", "thu7", "thubay", "chunhat",
+            "t2", "t3", "t4", "t5", "t6", "t7", "cn"
+        ]
+        return dayHeaders.contains(cleaned)
+    }
+
     /// Tự động chuyển đổi giờ chiều/tối (ví dụ "7h tối" -> 19h, "2h chiều" -> 14h)
     private static func adjustForPeriod(_ hour: Int, in text: String) -> Int {
         if hour < 12 {
@@ -296,24 +300,32 @@ struct ScheduleTextParser {
         var s = text
         let removePatterns = [
             #"(?i)\b(thứ\s+[2-7]|thứ\s+hai|thứ\s+ba|thứ\s+tư|thứ\s+năm|thứ\s+sáu|thứ\s+bảy|chủ\s+nhật)\b"#,
-            #"(?i)\b(thu\s+[2-7]|t[2-7]|cn)\b"#,
+            #"(?i)\b(thu\s+[2-7]|thu\s+hai|thu\s+ba|thu\s+tu|thu\s+nam|thu\s+sau|thu\s+bay|chu\s+nhat)\b"#,
+            #"(?i)\b(t[2-7]|cn)\b"#,
             #"(?i)\b(2-4-6|3-5-7|2,4,6|3,5,7|2, 4, 6|3, 5, 7)\b"#,
-            #"(?i)\b(sáng|chiều|tối|buổi\s+sáng|buổi\s+chiều|buổi\s+tối|lúc|vào|hằng\s+ngày|hàng\s+ngày)\b"#,
             #"(?i)\b(tuần\s+này|tuan\s+nay)\b"#
         ]
 
         for pat in removePatterns {
-            s = s.replacingOccurrences(of: pat, with: "", options: .regularExpression)
+            s = s.replacingOccurrences(of: pat, with: " ", options: .regularExpression)
         }
+
+        // Chỉ xóa từ chỉ buổi ở đầu câu hoặc cuối câu để không làm mất chữ trong "ăn sáng", "uống trà chiều", "ăn tối"
+        s = s.replacingOccurrences(of: #"(?i)^(sáng|chiều|tối|buổi\s+sáng|buổi\s+chiều|buổi\s+tối|lúc|vào)\s+"#, with: "", options: .regularExpression)
+        s = s.replacingOccurrences(of: #"(?i)\s+(buổi\s+sáng|buổi\s+chiều|buổi\s+tối|hằng\s+ngày|hàng\s+ngày)$"#, with: "", options: .regularExpression)
 
         return s
     }
 
-    /// Làm sạch tiêu đề: bỏ dấu gạch đầu dòng, dấu hai chấm...
+    /// Làm sạch tiêu đề: bỏ dấu gạch đầu dòng, dấu hai chấm... và viết hoa chữ cái đầu
     private static func cleanTitle(_ text: String) -> String {
         var s = text.trimmingCharacters(in: .whitespacesAndNewlines)
         let removeChars: CharacterSet = [":", "-", "–", "—", "*", "•", ";", ",", " "]
         s = s.trimmingCharacters(in: removeChars)
-        return s.trimmingCharacters(in: .whitespacesAndNewlines)
+        s = s.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let first = s.first {
+            s = first.uppercased() + s.dropFirst()
+        }
+        return s
     }
 }

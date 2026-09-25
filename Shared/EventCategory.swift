@@ -76,19 +76,20 @@ enum EventCategory: String, Codable, CaseIterable, Identifiable {
             return false
         }
 
-        if containsAny(["họp", "meeting", "làm", "work", "kpi", "báo cáo", "dự án", "deadline", "công ty", "task", "code", "khách", "call", "phỏng vấn"]) {
-            return .work
+        // Ưu tiên học tập, sức khỏe, gia đình trước các từ khóa công việc chung chung
+        if containsAny(["học", "study", "thi", "đọc sách", "lớp", "tiếng anh", "ôn", "bài tập", "lecture", "khóa học", "exam", "course"]) {
+            return .study
         }
         if containsAny(["gym", "chạy", "bơi", "yoga", "khám", "thuốc", "thể dục", "relax", "spa", "đi dạo", "bác sĩ", "workout", "fitness"]) {
             return .health
         }
-        if containsAny(["học", "study", "thi", "đọc sách", "lớp", "tiếng anh", "ôn", "bài tập", "lecture", "khóa học", "exam", "course"]) {
-            return .study
-        }
         if containsAny(["gia đình", "mẹ", "bố", "con", "chợ", "siêu thị", "nấu", "family", "vợ", "chồng", "nhà", "dọn dẹp", "đón"]) {
             return .family
         }
-        if containsAny(["cafe", "cà phê", "bạn", "phim", "du lịch", "mua sắm", "shopee", "chill", "ăn trưa", "ăn tối", "quán", "nhậu", "party", "sinh nhật"]) {
+        if containsAny(["họp", "meeting", "đi làm", "làm việc", "công việc", "work", "kpi", "báo cáo", "dự án", "deadline", "công ty", "task", "code", "khách", "call", "phỏng vấn"]) {
+            return .work
+        }
+        if containsAny(["cafe", "cà phê", "bạn", "phim", "du lịch", "mua sắm", "shopee", "chill", "ăn trưa", "ăn tối", "quán", "nhậu", "party", "sinh nhật", "đi chơi"]) {
             return .personal
         }
 
