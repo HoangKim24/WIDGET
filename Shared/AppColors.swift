@@ -1,36 +1,17 @@
 import SwiftUI
 
-/// Bảng màu tập trung của app, dựa trên Color Asset để đổi Light/Dark Mode tự động.
+/// Bảng màu chính và điểm nhấn thương hiệu của ứng dụng.
 enum AppColors {
     static let primary = Color("AppPrimary")
     static let accent = Color("AppAccent")
 
+    /// Màu đại diện cho từng danh mục sự kiện
     static func color(for category: EventCategory) -> Color {
-        Color(category.assetName)
+        category.color
     }
 
+    /// Dải gradient cho từng danh mục sự kiện
     static func gradient(for category: EventCategory) -> LinearGradient {
-        LinearGradient(
-            colors: [color(for: category), color(for: category).opacity(0.72)],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-    }
-
-    static func iconGradient(start: Color, end: Color) -> LinearGradient {
-        LinearGradient(colors: [start, end], startPoint: .topLeading, endPoint: .bottomTrailing)
-    }
-}
-
-private extension EventCategory {
-    var assetName: String {
-        switch self {
-        case .work: return "CategoryWork"
-        case .personal: return "CategoryPersonal"
-        case .health: return "CategoryHealth"
-        case .study: return "CategoryStudy"
-        case .family: return "CategoryFamily"
-        case .other: return "CategoryOther"
-        }
+        category.gradient
     }
 }

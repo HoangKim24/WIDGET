@@ -11,12 +11,12 @@ struct DailyAgendaAndWeekScheduleView: View {
         config.effectiveAccentColor
     }
 
+    private func themeFont(size: CGFloat, weight: Font.Weight = .regular) -> Font {
+        config.fontTheme.font(size: size, weight: weight)
+    }
+
     private var currentWeekDays: [Date] {
-        let today = calendar.startOfDay(for: Date())
-        let weekday = calendar.component(.weekday, from: today)
-        let daysFromMonday = (weekday + 5) % 7
-        let monday = calendar.date(byAdding: .day, value: -daysFromMonday, to: today) ?? today
-        return (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: monday) }
+        calendar.weekDays()
     }
 
     /// Lấy danh sách sự kiện cho một ngày (hỗ trợ cả sự kiện lặp lại hàng tuần và khóa dừng lặp)
@@ -31,9 +31,14 @@ struct DailyAgendaAndWeekScheduleView: View {
         return events(for: today)
     }
 
-    /// Sự kiện có bật nhắc nhở (Reminders)
+    /// Sự kiện có bật nhắc nhở (Reminders) - chỉ lấy sự kiện hôm nay hoặc tương lai
     private var reminderEvents: [CalendarEvent] {
-        events.filter { $0.hasReminder }
+        let startOfToday = calendar.startOfDay(for: Date())
+        return events
+            .filter { ev in
+                ev.hasReminder && (ev.isRecurringWeekly || ev.endDate >= startOfToday)
+            }
+            .sorted { $0.startDate < $1.startDate }
     }
 
     var body: some View {
@@ -62,15 +67,15 @@ struct DailyAgendaAndWeekScheduleView: View {
     // MARK: - BỐ CỤC 2: 7 DÒNG CHI TIẾT (Rows Layout)
     private var rowsLayoutView: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Weekly Schedule")
-                .font(.system(size: 18, weight: .heavy, design: .rounded))
+            Text("Lịch Trình Tuần")
+                .font(themeFont(size: 18, weight: .heavy))
                 .foregroundStyle(.white)
 
             VStack(spacing: 6) {
                 ForEach(currentWeekDays, id: \.self) { day in
                     let isToday = calendar.isDateInToday(day)
                     let dayNum = calendar.component(.day, from: day)
-                    let dayName = vietnameseShortDay(for: day)
+                    let dayName = day.vietnameseWeekdayShort
                     let dayEvs = events(for: day)
 
                     HStack(spacing: 8) {
@@ -79,7 +84,7 @@ struct DailyAgendaAndWeekScheduleView: View {
                             Text(dayName)
                                 .font(.system(size: 10, weight: .bold))
                             Text("\(dayNum)")
-                                .font(.system(size: 11, weight: .heavy, design: .rounded))
+                                .font(themeFont(size: 11, weight: .heavy))
                         }
                         .foregroundStyle(isToday ? Color.black : (accent))
                         .padding(.horizontal, 6)
@@ -95,7 +100,7 @@ struct DailyAgendaAndWeekScheduleView: View {
                             HStack(spacing: 5) {
                                 ForEach(dayEvs.prefix(2)) { ev in
                                     HStack(alignment: .center, spacing: 4) {
-                                        Text(formatShortTime(ev))
+                                        Text(ev.formattedTimeRange)
                                             .font(.system(size: 8, weight: .bold, design: .monospaced))
                                             .opacity(0.9)
                                         Text(ev.title)
@@ -136,7 +141,7 @@ struct DailyAgendaAndWeekScheduleView: View {
             .padding(8)
             .background(
                 RoundedRectangle(cornerRadius: 14)
-                    .fill(Color(red: 0.11, green: 0.12, blue: 0.15).opacity(0.85))
+                    .fill(Color(red: 0.11, green: 0.12, blue: 0.15).opacity(config.cardOpacity))
                     .overlay(
                         RoundedRectangle(cornerRadius: 14)
                             .stroke(Color.white.opacity(0.12), lineWidth: 1)
@@ -157,7 +162,7 @@ struct DailyAgendaAndWeekScheduleView: View {
                     Circle()
                         .fill(accent)
                         .frame(width: 7, height: 7)
-                    Text("AGENDA & WEEK")
+                    Text("LỊCH TRÌNH & HÔM NAY")
                         .font(.system(size: 10, weight: .bold))
                         .foregroundStyle(accent)
                         .tracking(0.8)
@@ -179,7 +184,7 @@ struct DailyAgendaAndWeekScheduleView: View {
         .padding(.vertical, 14)
         .background(
             RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(Color(red: 0.12, green: 0.13, blue: 0.18).opacity(0.75))
+                .fill(Color(red: 0.12, green: 0.13, blue: 0.18).opacity(config.cardOpacity))
                 .background(
                     RoundedRectangle(cornerRadius: 22, style: .continuous)
                         .fill(Color.white.opacity(0.06))
@@ -216,7 +221,7 @@ struct DailyAgendaAndWeekScheduleView: View {
                             .font(.system(size: 8.5, weight: .bold))
                             .foregroundStyle(isToday ? accent : .white.opacity(0.75))
                         Text("\(dayNum)")
-                            .font(.system(size: 10.5, weight: .heavy, design: .rounded))
+                            .font(themeFont(size: 10.5, weight: .heavy))
                             .foregroundStyle(isToday ? accent : .white)
                     }
                     .padding(.bottom, 2)
@@ -233,7 +238,7 @@ struct DailyAgendaAndWeekScheduleView: View {
                         if !dayEvents.isEmpty {
                             ForEach(dayEvents.prefix(4)) { event in
                                 VStack(spacing: 0.5) {
-                                    Text(formatShortTime(event))
+                                    Text(event.formattedTimeRange)
                                         .font(.system(size: 6, weight: .bold, design: .monospaced))
                                         .lineLimit(1)
                                         .minimumScaleFactor(0.7)
@@ -265,7 +270,7 @@ struct DailyAgendaAndWeekScheduleView: View {
         .padding(8)
         .background(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color(red: 0.11, green: 0.12, blue: 0.15).opacity(0.85))
+                .fill(Color(red: 0.11, green: 0.12, blue: 0.15).opacity(config.cardOpacity))
                 .overlay(
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
                         .stroke(Color.white.opacity(0.18), lineWidth: 1)
@@ -278,14 +283,14 @@ struct DailyAgendaAndWeekScheduleView: View {
     private var todayAgendaSection: some View {
         VStack(alignment: .leading, spacing: 4) {
             if !todayEvents.isEmpty {
-                Text("Today")
-                    .font(.system(size: 15, weight: .heavy, design: .rounded))
+                Text("Hôm Nay")
+                    .font(themeFont(size: 15, weight: .heavy))
                     .foregroundStyle(accent)
 
                 VStack(alignment: .leading, spacing: 5) {
                     ForEach(todayEvents.prefix(3)) { event in
                         HStack(alignment: .top, spacing: 8) {
-                            Text(formatTimeRange(event))
+                            Text(event.formattedTimeRange)
                                 .font(.system(size: 11, weight: .bold, design: .monospaced))
                                 .foregroundStyle(.white)
                                 .frame(width: 84, alignment: .leading)
@@ -335,8 +340,8 @@ struct DailyAgendaAndWeekScheduleView: View {
                     Image(systemName: "bell.fill")
                         .font(.system(size: 12))
                         .foregroundStyle(Color(red: 0.95, green: 0.61, blue: 0.07))
-                    Text("Reminders")
-                        .font(.system(size: 16, weight: .heavy, design: .rounded))
+                    Text("Nhắc Việc")
+                        .font(themeFont(size: 16, weight: .heavy))
                         .foregroundStyle(Color(red: 0.95, green: 0.61, blue: 0.07))
                 }
 
@@ -355,7 +360,7 @@ struct DailyAgendaAndWeekScheduleView: View {
                                 .multilineTextAlignment(.leading)
                                 .fixedSize(horizontal: false, vertical: true)
 
-                            Text("(\(formatShortTime(event)))")
+                            Text("(\(event.formattedTimeRange))")
                                 .font(.system(size: 11))
                                 .foregroundStyle(.white.opacity(0.6))
                                 .padding(.top, 1)
@@ -367,52 +372,11 @@ struct DailyAgendaAndWeekScheduleView: View {
     }
 
     // Helpers
-    private func vietnameseShortDay(for date: Date) -> String {
-        let weekday = calendar.component(.weekday, from: date)
-        switch weekday {
-        case 1: return "Sun"
-        case 2: return "Mon"
-        case 3: return "Tue"
-        case 4: return "Wed"
-        case 5: return "Thu"
-        case 6: return "Fri"
-        case 7: return "Sat"
-        default: return ""
-        }
-    }
-
-    private func formatTimeRange(_ event: CalendarEvent) -> String {
-        if event.isAllDay { return "All day" }
-        let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm"
-        return "\(formatter.string(from: event.startDate))–\(formatter.string(from: event.endDate))"
-    }
-
-    private func formatShortTime(_ event: CalendarEvent) -> String {
-        if event.isAllDay { return "All day" }
-        let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm"
-        return "\(formatter.string(from: event.startDate))–\(formatter.string(from: event.endDate))"
-    }
-
     private func eventColor(for category: EventCategory) -> Color {
-        if config.isMonochromeTheme {
-            return accent
-        }
-        switch category {
-        case .work: return Color(red: 0.92, green: 0.30, blue: 0.29)
-        case .personal: return Color(red: 0.18, green: 0.58, blue: 1.0)
-        case .health: return Color(red: 0.28, green: 0.79, blue: 0.89)
-        case .study: return Color(red: 0.98, green: 0.79, blue: 0.14)
-        case .family: return Color(red: 0.91, green: 0.26, blue: 0.58)
-        case .other: return Color(red: 0.42, green: 0.36, blue: 0.91)
-        }
+        config.isMonochromeTheme ? accent : category.color
     }
 
     private func isLightColor(_ category: EventCategory) -> Bool {
-        if config.isMonochromeTheme {
-            return false
-        }
-        return category == .study || category == .health
+        config.isMonochromeTheme ? false : category.isLightColor
     }
 }

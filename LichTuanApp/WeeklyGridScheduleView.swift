@@ -29,6 +29,7 @@ struct WeeklyGridScheduleView: View {
     @State private var pickerSelectedDate: Date = Date()
     @State private var showCopiedAlert = false
     @State private var copiedCount: Int = 0
+    @State private var editingEvent: CalendarEvent? = nil
 
     // Đồng bộ & Sao lưu
     @State private var showDeviceCalendarImport = false
@@ -41,12 +42,7 @@ struct WeeklyGridScheduleView: View {
 
     // Danh sách 7 ngày trong tuần đang chọn (Thứ 2 -> Chủ Nhật)
     private var currentWeekDays: [Date] {
-        let today = calendar.startOfDay(for: Date())
-        let weekday = calendar.component(.weekday, from: today)
-        let daysFromMonday = (weekday + 5) % 7
-        let currentMonday = calendar.date(byAdding: .day, value: -daysFromMonday, to: today) ?? today
-        let targetMonday = calendar.date(byAdding: .day, value: weekOffset * 7, to: currentMonday) ?? currentMonday
-        return (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: targetMonday) }
+        calendar.weekDays(offsetWeeks: weekOffset)
     }
 
     private var weekHeaderTitle: String {
@@ -57,11 +53,8 @@ struct WeeklyGridScheduleView: View {
 
     private var weekDateSubtext: String {
         guard let first = currentWeekDays.first, let last = currentWeekDays.last else { return "" }
-        let fmt = DateFormatter()
-        fmt.dateFormat = "dd/MM"
-        let yearFmt = DateFormatter()
-        yearFmt.dateFormat = "yyyy"
-        return "\(fmt.string(from: first)) – \(fmt.string(from: last))/\(yearFmt.string(from: last))"
+        let yearStr = DateTimeUtils.yearFormatter.string(from: last)
+        return "\(first.shortDateString) – \(last.shortDateString)/\(yearStr)"
     }
 
     // Sự kiện thuộc ngày đang chọn (bao gồm cả sự kiện lặp lại hàng tuần và kiểm tra khóa lặp)
@@ -131,10 +124,26 @@ struct WeeklyGridScheduleView: View {
                                 Label("Dán Lịch & Quét Ảnh (OCR)", systemImage: "wand.and.stars")
                             }
 
-                            Button {
-                                copyCurrentWeekToNextWeek()
+                            Menu {
+                                Button {
+                                    copyCurrentWeek(numberOfWeeks: 1)
+                                } label: {
+                                    Label("Sao chép sang 1 tuần sau", systemImage: "1.circle")
+                                }
+
+                                Button {
+                                    copyCurrentWeek(numberOfWeeks: 2)
+                                } label: {
+                                    Label("Sao chép sang 2 tuần tiếp theo", systemImage: "2.circle")
+                                }
+
+                                Button {
+                                    copyCurrentWeek(numberOfWeeks: 4)
+                                } label: {
+                                    Label("Sao chép sang 4 tuần (Cả tháng)", systemImage: "calendar.badge.plus")
+                                }
                             } label: {
-                                Label("Sao Chép Lịch Sang Tuần Sau", systemImage: "doc.on.doc")
+                                Label("Sao Chép Lịch Tuần...", systemImage: "doc.on.doc")
                             }
                         }
 
@@ -206,6 +215,18 @@ struct WeeklyGridScheduleView: View {
                         jumpToDate(picked)
                     }
                 )
+            }
+            .sheet(item: $editingEvent) { eventToEdit in
+                EventEditorView(event: eventToEdit) { updated in
+                    withAnimation(.spring(response: 0.3)) {
+                        viewModel.update(updated)
+                        if updated.hasReminder {
+                            NotificationManager.shared.scheduleNotification(for: updated)
+                        } else {
+                            NotificationManager.shared.cancelNotification(for: updated.id)
+                        }
+                    }
+                }
             }
             .fileImporter(
                 isPresented: $showRestorePicker,
@@ -355,7 +376,7 @@ struct WeeklyGridScheduleView: View {
                         .filter { $0.occurs(on: day, calendar: calendar) }
                         .sorted { $0.startDate < $1.startDate }
                     let dayNum = calendar.component(.day, from: day)
-                    let shortName = vietnameseWeekdayShort(day)
+                    let shortName = day.vietnameseWeekdayShort
 
                     Button {
                         withAnimation(.spring(response: 0.3)) {
@@ -387,19 +408,19 @@ struct WeeklyGridScheduleView: View {
                                 if !dayEvents.isEmpty {
                                     ForEach(dayEvents.prefix(3)) { ev in
                                         RoundedRectangle(cornerRadius: 3.5)
-                                            .fill(eventColor(for: ev.category))
+                                            .fill(ev.category.color)
                                             .frame(minHeight: 20)
                                             .overlay(
                                                 VStack(spacing: 0.5) {
-                                                    Text(formatTimeRange(ev))
+                                                    Text(ev.formattedTimeRange)
                                                         .font(.system(size: 5.5, weight: .bold, design: .monospaced))
-                                                        .foregroundStyle(isLightColor(ev.category) ? Color.black.opacity(0.85) : Color.white.opacity(0.9))
+                                                        .foregroundStyle(ev.category.isLightColor ? Color.black.opacity(0.85) : Color.white.opacity(0.9))
                                                         .lineLimit(1)
                                                         .minimumScaleFactor(0.7)
 
                                                     Text(ev.title)
                                                         .font(.system(size: 6.5, weight: .bold))
-                                                        .foregroundStyle(isLightColor(ev.category) ? Color.black : Color.white)
+                                                        .foregroundStyle(ev.category.textColor)
                                                         .lineLimit(2)
                                                         .multilineTextAlignment(.center)
                                                 }
@@ -578,7 +599,7 @@ struct WeeklyGridScheduleView: View {
                             selectedCategory = cat
                         } label: {
                             Circle()
-                                .fill(eventColor(for: cat))
+                                .fill(cat.color)
                                 .frame(width: 32, height: 32)
                                 .overlay(
                                     Circle()
@@ -747,11 +768,11 @@ struct WeeklyGridScheduleView: View {
                         HStack(spacing: 12) {
                             // Cột màu
                             RoundedRectangle(cornerRadius: 3)
-                                .fill(eventColor(for: event.category))
+                                .fill(event.category.color)
                                 .frame(width: 4, height: 36)
 
                             // Khung giờ
-                            Text(formatTimeRange(event))
+                            Text(event.formattedTimeRange)
                                 .font(.system(size: 13, weight: .bold, design: .monospaced))
                                 .foregroundStyle(.white.opacity(0.9))
                                 .frame(width: 95, alignment: .leading)
@@ -760,7 +781,7 @@ struct WeeklyGridScheduleView: View {
                             HStack(alignment: .top, spacing: 6) {
                                 Text(event.title)
                                     .font(.system(size: 14, weight: .semibold))
-                                    .foregroundStyle(eventColor(for: event.category))
+                                    .foregroundStyle(event.category.color)
                                     .lineLimit(nil)
                                     .multilineTextAlignment(.leading)
                                     .fixedSize(horizontal: false, vertical: true)
@@ -773,7 +794,7 @@ struct WeeklyGridScheduleView: View {
                                             HStack(spacing: 2) {
                                                 Image(systemName: "lock.fill")
                                                     .font(.system(size: 8))
-                                                Text("đến \(vietnameseDateShort(limit))")
+                                                Text("đến \(limit.shortDateString)")
                                                     .font(.system(size: 10, weight: .medium))
                                             }
                                             .foregroundStyle(Color.orange.opacity(0.9))
@@ -792,6 +813,16 @@ struct WeeklyGridScheduleView: View {
                             }
 
                             Spacer()
+
+                            // Nút sửa ô lịch
+                            Button {
+                                editingEvent = event
+                            } label: {
+                                Image(systemName: "pencil")
+                                    .font(.system(size: 13))
+                                    .foregroundStyle(Color.cyan.opacity(0.85))
+                                    .padding(6)
+                            }
 
                             // Nút xóa ô lịch
                             Button {
@@ -886,56 +917,6 @@ struct WeeklyGridScheduleView: View {
         }
     }
 
-    // Formatters
-    private func vietnameseWeekdayShort(_ date: Date) -> String {
-        let weekday = calendar.component(.weekday, from: date)
-        switch weekday {
-        case 1: return "CN"
-        case 2: return "T2"
-        case 3: return "T3"
-        case 4: return "T4"
-        case 5: return "T5"
-        case 6: return "T6"
-        case 7: return "T7"
-        default: return ""
-        }
-    }
-
-    private func vietnameseFullDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "vi_VN")
-        formatter.dateFormat = "EEEE, dd/MM"
-        return formatter.string(from: date).capitalized
-    }
-
-    private func formatTimeRange(_ event: CalendarEvent) -> String {
-        if event.isAllDay { return "Cả ngày" }
-        let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm"
-        return "\(formatter.string(from: event.startDate))–\(formatter.string(from: event.endDate))"
-    }
-
-    private func eventColor(for category: EventCategory) -> Color {
-        switch category {
-        case .work: return Color(red: 0.92, green: 0.30, blue: 0.29)
-        case .personal: return Color(red: 0.18, green: 0.58, blue: 1.0)
-        case .health: return Color(red: 0.28, green: 0.79, blue: 0.89)
-        case .study: return Color(red: 0.98, green: 0.79, blue: 0.14)
-        case .family: return Color(red: 0.91, green: 0.26, blue: 0.58)
-        case .other: return Color(red: 0.42, green: 0.36, blue: 0.91)
-        }
-    }
-
-    private func isLightColor(_ category: EventCategory) -> Bool {
-        return category == .study || category == .health
-    }
-
-    private func vietnameseDateShort(_ date: Date) -> String {
-        let fmt = DateFormatter()
-        fmt.dateFormat = "dd/MM"
-        return fmt.string(from: date)
-    }
-
     private func quickRecurrenceLimitButton(title: String, weeks: Int) -> some View {
         Button {
             if let newEnd = calendar.date(byAdding: .day, value: weeks * 7, to: selectedDate) {
@@ -960,36 +941,25 @@ struct WeeklyGridScheduleView: View {
             if newOffset == 0 {
                 selectedDate = calendar.startOfDay(for: Date())
             } else {
-                let today = calendar.startOfDay(for: Date())
-                let weekday = calendar.component(.weekday, from: today)
-                let daysFromMonday = (weekday + 5) % 7
-                let currentMonday = calendar.date(byAdding: .day, value: -daysFromMonday, to: today) ?? today
-                let targetMonday = calendar.date(byAdding: .day, value: newOffset * 7, to: currentMonday) ?? currentMonday
+                let targetMonday = calendar.date(byAdding: .day, value: newOffset * 7, to: calendar.startOfWeek()) ?? Date()
                 selectedDate = targetMonday
             }
         }
     }
 
     private func jumpToDate(_ date: Date) {
-        let today = calendar.startOfDay(for: Date())
-        let target = calendar.startOfDay(for: date)
-
-        let weekdayToday = calendar.component(.weekday, from: today)
-        let mondayToday = calendar.date(byAdding: .day, value: -((weekdayToday + 5) % 7), to: today) ?? today
-
-        let weekdayTarget = calendar.component(.weekday, from: target)
-        let mondayTarget = calendar.date(byAdding: .day, value: -((weekdayTarget + 5) % 7), to: target) ?? target
-
+        let mondayToday = calendar.startOfWeek(for: Date())
+        let mondayTarget = calendar.startOfWeek(for: date)
         let daysDiff = calendar.dateComponents([.day], from: mondayToday, to: mondayTarget).day ?? 0
         let offset = Int(round(Double(daysDiff) / 7.0))
 
         withAnimation(.spring(response: 0.3)) {
             weekOffset = offset
-            selectedDate = target
+            selectedDate = date
         }
     }
 
-    private func copyCurrentWeekToNextWeek() {
+    private func copyCurrentWeek(numberOfWeeks: Int = 1) {
         let weekDays = currentWeekDays
         guard let firstDay = weekDays.first, let lastDay = weekDays.last else { return }
         let endOfLastDay = calendar.date(byAdding: .day, value: 1, to: lastDay) ?? lastDay
@@ -1000,23 +970,28 @@ struct WeeklyGridScheduleView: View {
 
         guard !eventsToCopy.isEmpty else { return }
 
-        for ev in eventsToCopy {
-            if let newStart = calendar.date(byAdding: .day, value: 7, to: ev.startDate),
-               let newEnd = calendar.date(byAdding: .day, value: 7, to: ev.endDate) {
-                let copiedEvent = CalendarEvent(
-                    title: ev.title,
-                    startDate: newStart,
-                    endDate: newEnd,
-                    category: ev.category,
-                    isAllDay: ev.isAllDay,
-                    isRecurringWeekly: false,
-                    hasReminder: ev.hasReminder
-                )
-                viewModel.add(copiedEvent)
+        var copiedEvents: [CalendarEvent] = []
+        for weekStep in 1...numberOfWeeks {
+            let dayOffset = weekStep * 7
+            for ev in eventsToCopy {
+                if let newStart = calendar.date(byAdding: .day, value: dayOffset, to: ev.startDate),
+                   let newEnd = calendar.date(byAdding: .day, value: dayOffset, to: ev.endDate) {
+                    let copiedEvent = CalendarEvent(
+                        title: ev.title,
+                        startDate: newStart,
+                        endDate: newEnd,
+                        category: ev.category,
+                        isAllDay: ev.isAllDay,
+                        isRecurringWeekly: false,
+                        hasReminder: ev.hasReminder
+                    )
+                    copiedEvents.append(copiedEvent)
+                }
             }
         }
 
-        copiedCount = eventsToCopy.count
+        viewModel.importEvents(copiedEvents, skipDuplicates: true)
+        copiedCount = copiedEvents.count
         showCopiedAlert = true
         changeWeek(by: 1)
     }

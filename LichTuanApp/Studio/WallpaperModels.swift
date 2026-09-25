@@ -5,6 +5,9 @@ enum WallpaperPreset: String, CaseIterable, Identifiable, Codable {
     case sunset = "sunset"
     case aurora = "aurora"
     case obsidian = "obsidian"
+    case oled = "oled"
+    case cyberpunk = "cyberpunk"
+    case nordic = "nordic"
     case matcha = "matcha"
     case candy = "candy"
     case custom = "custom"
@@ -15,7 +18,10 @@ enum WallpaperPreset: String, CaseIterable, Identifiable, Codable {
         switch self {
         case .sunset: return "Hoàng Hôn Chill"
         case .aurora: return "Cực Quang"
-        case .obsidian: return "Đen OLED"
+        case .obsidian: return "Đen Obsidian"
+        case .oled: return "Đen OLED 100%"
+        case .cyberpunk: return "Cyberpunk Neon"
+        case .nordic: return "Pastel Bắc Âu"
         case .matcha: return "Matcha Dịu Êm"
         case .candy: return "Kẹo Ngọt Pastel"
         case .custom: return "Ảnh Của Bạn"
@@ -27,6 +33,9 @@ enum WallpaperPreset: String, CaseIterable, Identifiable, Codable {
         case .sunset: return "sun.horizon.fill"
         case .aurora: return "sparkles"
         case .obsidian: return "moon.stars.fill"
+        case .oled: return "moon.fill"
+        case .cyberpunk: return "bolt.shield.fill"
+        case .nordic: return "cloud.fog.fill"
         case .matcha: return "leaf.fill"
         case .candy: return "heart.fill"
         case .custom: return "photo.badge.plus"
@@ -61,6 +70,32 @@ enum WallpaperPreset: String, CaseIterable, Identifiable, Codable {
                     Color(red: 0.03, green: 0.03, blue: 0.04),
                     Color(red: 0.10, green: 0.11, blue: 0.14),
                     Color(red: 0.05, green: 0.05, blue: 0.06)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        case .oled:
+            return LinearGradient(
+                colors: [Color.black, Color.black],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        case .cyberpunk:
+            return LinearGradient(
+                colors: [
+                    Color(red: 0.08, green: 0.0, blue: 0.16),
+                    Color(red: 0.22, green: 0.04, blue: 0.38),
+                    Color(red: 0.05, green: 0.42, blue: 0.58)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        case .nordic:
+            return LinearGradient(
+                colors: [
+                    Color(red: 0.16, green: 0.18, blue: 0.22),
+                    Color(red: 0.26, green: 0.30, blue: 0.35),
+                    Color(red: 0.44, green: 0.49, blue: 0.52)
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
@@ -176,6 +211,47 @@ enum AccentColorTheme: String, CaseIterable, Identifiable, Codable {
     }
 }
 
+// MARK: - Phong Cách Phông Chữ Lịch Nghệ Thuật
+enum CalendarFontTheme: String, CaseIterable, Identifiable, Codable {
+    case rounded = "rounded"
+    case modern = "modern"
+    case serif = "serif"
+    case monospaced = "monospaced"
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .rounded: return "Bo Tròn"
+        case .modern: return "Hiện Đại"
+        case .serif: return "Cổ Điển"
+        case .monospaced: return "Coder"
+        }
+    }
+
+    var iconName: String {
+        switch self {
+        case .rounded: return "capsule"
+        case .modern: return "textformat"
+        case .serif: return "textformat.alt"
+        case .monospaced: return "chevron.left.forwardslash.chevron.right"
+        }
+    }
+
+    func font(size: CGFloat, weight: Font.Weight = .regular) -> Font {
+        switch self {
+        case .rounded:
+            return .system(size: size, weight: weight, design: .rounded)
+        case .modern:
+            return .system(size: size, weight: weight, design: .default)
+        case .serif:
+            return .system(size: size, weight: weight, design: .serif)
+        case .monospaced:
+            return .system(size: size, weight: weight, design: .monospaced)
+        }
+    }
+}
+
 // MARK: - Cấu Hình Toàn Bộ Hình Nền
 struct WallpaperConfig: Equatable, Codable {
     var preset: WallpaperPreset = .sunset
@@ -188,6 +264,56 @@ struct WallpaperConfig: Equatable, Codable {
     var blurRadius: Double = 0.0
     var showEventDots: Bool = true
     var fineTuneYOffset: CGFloat = 0.0
+    var fontTheme: CalendarFontTheme = .rounded
+    var cardOpacity: Double = 0.85
+
+    init(
+        preset: WallpaperPreset = .sunset,
+        layoutType: CalendarLayoutType = .rows,
+        position: CalendarPosition = .top,
+        accentColor: AccentColorTheme = .gold,
+        customHexColor: String? = nil,
+        isMonochromeTheme: Bool = false,
+        dimOpacity: Double = 0.25,
+        blurRadius: Double = 0.0,
+        showEventDots: Bool = true,
+        fineTuneYOffset: CGFloat = 0.0,
+        fontTheme: CalendarFontTheme = .rounded,
+        cardOpacity: Double = 0.85
+    ) {
+        self.preset = preset
+        self.layoutType = layoutType
+        self.position = position
+        self.accentColor = accentColor
+        self.customHexColor = customHexColor
+        self.isMonochromeTheme = isMonochromeTheme
+        self.dimOpacity = dimOpacity
+        self.blurRadius = blurRadius
+        self.showEventDots = showEventDots
+        self.fineTuneYOffset = fineTuneYOffset
+        self.fontTheme = fontTheme
+        self.cardOpacity = cardOpacity
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case preset, layoutType, position, accentColor, customHexColor, isMonochromeTheme, dimOpacity, blurRadius, showEventDots, fineTuneYOffset, fontTheme, cardOpacity
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        preset = try c.decodeIfPresent(WallpaperPreset.self, forKey: .preset) ?? .sunset
+        layoutType = try c.decodeIfPresent(CalendarLayoutType.self, forKey: .layoutType) ?? .rows
+        position = try c.decodeIfPresent(CalendarPosition.self, forKey: .position) ?? .top
+        accentColor = try c.decodeIfPresent(AccentColorTheme.self, forKey: .accentColor) ?? .gold
+        customHexColor = try c.decodeIfPresent(String.self, forKey: .customHexColor)
+        isMonochromeTheme = try c.decodeIfPresent(Bool.self, forKey: .isMonochromeTheme) ?? false
+        dimOpacity = try c.decodeIfPresent(Double.self, forKey: .dimOpacity) ?? 0.25
+        blurRadius = try c.decodeIfPresent(Double.self, forKey: .blurRadius) ?? 0.0
+        showEventDots = try c.decodeIfPresent(Bool.self, forKey: .showEventDots) ?? true
+        fineTuneYOffset = try c.decodeIfPresent(CGFloat.self, forKey: .fineTuneYOffset) ?? 0.0
+        fontTheme = try c.decodeIfPresent(CalendarFontTheme.self, forKey: .fontTheme) ?? .rounded
+        cardOpacity = try c.decodeIfPresent(Double.self, forKey: .cardOpacity) ?? 0.85
+    }
 
     var effectiveAccentColor: Color {
         if let hex = customHexColor, let c = Color(hex: hex) {

@@ -1,43 +1,63 @@
 import Foundation
+#if canImport(WidgetKit)
+import WidgetKit
+#endif
 
-/// Lớp lưu và đọc dữ liệu sự kiện của app chính.
-///
-/// Trước đây lớp này ghi vào UserDefaults của App Group để widget đọc chung.
-/// Apple ID miễn phí không được cấp capability App Groups, nên bản này lưu
-/// cục bộ trong sandbox của app và việc chia sẻ với widget do `GistSyncClient`
-/// đảm nhiệm thông qua một Gist trên GitHub.
+/// Lớp lưu và đọc dữ liệu sự kiện của ứng dụng (lưu trữ cục bộ an toàn, hoạt động 100% offline).
+/// Hỗ trợ chia sẻ dữ liệu liên tục với WidgetKit Extension (Màn hình khóa & Màn hình chính) và Shortcuts.
 final class SharedDataStore {
-    static let shared = SharedDataStore()
+    static let appGroupName = "group.com.hoangkim24.lichtuan"
+
+    /// Tự động lấy App Group UserDefaults để chia sẻ với Widget, có fallback an toàn về .standard
+    static var defaultUserDefaults: UserDefaults {
+        UserDefaults(suiteName: appGroupName) ?? .standard
+    }
+
+    static let shared = SharedDataStore(userDefaults: defaultUserDefaults)
 
     private let eventsKey = "calendarEvents"
     private let encoder = EventCoding.encoder
     private let decoder = EventCoding.decoder
     private let userDefaults: UserDefaults
 
-    init(userDefaults: UserDefaults = .standard) {
+    init(userDefaults: UserDefaults = defaultUserDefaults) {
         self.userDefaults = userDefaults
     }
 
     /// Đọc toàn bộ sự kiện đã lưu. Nếu không có dữ liệu thì trả về mảng rỗng.
     func loadEvents() -> [CalendarEvent] {
-        guard let data = userDefaults.data(forKey: eventsKey) else {
-            return []
+        if let data = userDefaults.data(forKey: eventsKey),
+           let events = try? decoder.decode([CalendarEvent].self, from: data) {
+            return events
         }
 
-        do {
-            return try decoder.decode([CalendarEvent].self, from: data)
-        } catch {
-            return []
+        // Fallback đọc từ .standard nếu App Group chưa có dữ liệu
+        if userDefaults != UserDefaults.standard,
+           let data = UserDefaults.standard.data(forKey: eventsKey),
+           let events = try? decoder.decode([CalendarEvent].self, from: data) {
+            return events
         }
+
+        return []
     }
 
-    /// Lưu danh sách sự kiện xuống bộ nhớ cục bộ của app.
+    /// Lưu danh sách sự kiện xuống bộ nhớ cục bộ của app và kích hoạt Widget cập nhật tức thì.
     func save(events: [CalendarEvent]) {
         guard let data = try? encoder.encode(events) else {
             return
         }
 
         userDefaults.set(data, forKey: eventsKey)
+
+        // Đồng bộ dự phòng vào .standard
+        if userDefaults != UserDefaults.standard {
+            UserDefaults.standard.set(data, forKey: eventsKey)
+        }
+
+        // Tự động làm mới toàn bộ Widget trên Màn hình khóa & Màn hình chính
+        #if canImport(WidgetKit)
+        WidgetCenter.shared.reloadAllTimelines()
+        #endif
     }
 
     /// Thêm một sự kiện mới vào danh sách hiện có.
@@ -69,20 +89,17 @@ final class SharedDataStore {
     /// Xóa toàn bộ dữ liệu hiện có trong bộ nhớ cục bộ của app.
     func clearAllEvents() {
         userDefaults.removeObject(forKey: eventsKey)
+        UserDefaults.standard.removeObject(forKey: eventsKey)
+
+        #if canImport(WidgetKit)
+        WidgetCenter.shared.reloadAllTimelines()
+        #endif
     }
 
     private func normalized(_ event: CalendarEvent) -> CalendarEvent {
-        guard event.endDate >= event.startDate else {
-            return CalendarEvent(
-                id: event.id,
-                title: event.title,
-                startDate: event.startDate,
-                endDate: event.startDate,
-                category: event.category,
-                isAllDay: event.isAllDay
-            )
-        }
-
-        return event
+        guard event.endDate < event.startDate else { return event }
+        var copy = event
+        copy.endDate = event.startDate
+        return copy
     }
 }

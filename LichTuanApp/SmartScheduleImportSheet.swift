@@ -22,10 +22,7 @@ struct SmartScheduleImportSheet: View {
 
     // Tính Thứ 2 của tuần hiện tại làm mốc
     private var currentMonday: Date {
-        let today = calendar.startOfDay(for: Date())
-        let weekday = calendar.component(.weekday, from: today)
-        let daysFromMonday = (weekday + 5) % 7
-        return calendar.date(byAdding: .day, value: -daysFromMonday, to: today) ?? today
+        calendar.startOfWeek()
     }
 
     var body: some View {
@@ -35,26 +32,37 @@ struct SmartScheduleImportSheet: View {
                     // Header hướng dẫn
                     VStack(alignment: .leading, spacing: 6) {
                         HStack {
-                            Image(systemName: "wand.and.stars")
+                            Image(systemName: "sparkles")
                                 .font(.system(size: 16, weight: .bold))
                                 .foregroundStyle(Color(red: 0.18, green: 0.58, blue: 1.0))
-                            Text("Dán Lịch Hoặc Quét Ảnh Thời Khóa Biểu")
+                            Text("Nhập Lịch Thông Minh (AI Prompt & Quét Ảnh)")
                                 .font(.system(size: 16, weight: .bold, design: .rounded))
                                 .foregroundStyle(.white)
                         }
 
-                        Text("Tự động nhận diện 'Thứ 2, T3, CN, 8h-10h...' từ tin nhắn Zalo, Ghi chú hoặc quét chữ trực tiếp từ ảnh chụp lịch giấy.")
+                        Text("Gõ câu nói tự nhiên (ví dụ: 'Sáng 2-4-6 tập gym 6h-7h, tối T3 học 19h'), dán tin nhắn Zalo hoặc quét ảnh thời khóa biểu.")
                             .font(.system(size: 12))
-                            .foregroundStyle(.white.opacity(0.7))
+                            .foregroundStyle(.white.opacity(0.75))
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 4)
+
+                    // Gợi ý câu lệnh nhanh (AI Prompt Chips)
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            promptChip(title: "⚡ 2-4-6 sáng 6h-7h Gym", prompt: "Sáng 2-4-6 tập gym 6h đến 7h")
+                            promptChip(title: "⚡ 3-5-7 tối 19h-21h Tiếng Anh", prompt: "Tối 3-5-7 học tiếng Anh 19h đến 21h")
+                            promptChip(title: "⚡ T7 cả ngày Dã ngoại", prompt: "Thứ 7 cả ngày đi dã ngoại")
+                            promptChip(title: "⚡ T2-T6 8h-17h Đi làm", prompt: "Từ thứ 2 đến thứ 6: 08:00 - 17:00 Đi làm")
+                        }
+                        .padding(.horizontal, 2)
+                    }
 
                     // Ô nhập văn bản & Trạng thái đang quét OCR
                     VStack(alignment: .trailing, spacing: 8) {
                         ZStack(alignment: .topLeading) {
                             if inputText.isEmpty && !isScanningOCR {
-                                Text("Dán tin nhắn Zalo hoặc ghi chú lịch tuần vào đây...\n\nVí dụ:\nThứ 2:\n- 08:00 - 10:00: Đi làm\n- 14:00 - 16:00: Họp dự án\nT3:\n- 07:30 - 09:00: Tập gym\n- 18:00 - 20:00: Học tiếng Anh\nCN:\n- Cả ngày: Đi chơi với gia đình")
+                                Text("Gõ câu nói tự nhiên hoặc dán tin nhắn Zalo vào đây...\n\nVí dụ câu lệnh:\n- Sáng 2-4-6 tập gym 6h-7h, tối T3 học tiếng Anh 19h\n- T7 cả ngày đi chơi với gia đình\n- Hoặc dán thời khóa biểu dạng Thứ 2: 8h-10h...")
                                     .font(.system(size: 13))
                                     .foregroundStyle(.white.opacity(0.35))
                                     .padding(.horizontal, 14)
@@ -260,7 +268,7 @@ struct SmartScheduleImportSheet: View {
 
                                         Text(item.title)
                                             .font(.system(size: 13, weight: .semibold))
-                                            .foregroundStyle(colorForCategory(item.category))
+                                            .foregroundStyle(item.category.color)
                                             .lineLimit(1)
 
                                         Spacer()
@@ -417,14 +425,22 @@ struct SmartScheduleImportSheet: View {
         dismiss()
     }
 
-    private func colorForCategory(_ cat: EventCategory) -> Color {
-        switch cat {
-        case .work: return Color(red: 0.92, green: 0.30, blue: 0.29)
-        case .personal: return Color(red: 0.18, green: 0.58, blue: 1.0)
-        case .health: return Color(red: 0.28, green: 0.79, blue: 0.89)
-        case .study: return Color(red: 0.98, green: 0.79, blue: 0.14)
-        case .family: return Color(red: 0.91, green: 0.26, blue: 0.58)
-        case .other: return Color(red: 0.42, green: 0.36, blue: 0.91)
+    private func promptChip(title: String, prompt: String) -> some View {
+        Button {
+            inputText = prompt
+            runParser(on: prompt)
+        } label: {
+            Text(title)
+                .font(.system(size: 11, weight: .semibold))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(Color.white.opacity(0.08))
+                .foregroundStyle(.white.opacity(0.9))
+                .clipShape(Capsule())
+                .overlay(
+                    Capsule()
+                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                )
         }
     }
 }

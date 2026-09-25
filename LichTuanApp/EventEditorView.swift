@@ -11,6 +11,10 @@ struct EventEditorView: View {
     @State private var endDate: Date
     @State private var isAllDay: Bool
     @State private var selectedCategory: EventCategory
+    @State private var isRecurringWeekly: Bool
+    @State private var hasRecurrenceLimit: Bool
+    @State private var recurrenceEndDate: Date
+    @State private var hasReminder: Bool
 
     init(event: CalendarEvent?, onSave: @escaping (CalendarEvent) -> Void) {
         self.existingEvent = event
@@ -20,6 +24,10 @@ struct EventEditorView: View {
         _endDate = State(initialValue: event?.endDate ?? Date().addingTimeInterval(60 * 60))
         _isAllDay = State(initialValue: event?.isAllDay ?? false)
         _selectedCategory = State(initialValue: event?.category ?? .other)
+        _isRecurringWeekly = State(initialValue: event?.isRecurringWeekly ?? false)
+        _hasRecurrenceLimit = State(initialValue: event?.recurrenceEndDate != nil)
+        _recurrenceEndDate = State(initialValue: event?.recurrenceEndDate ?? Date().addingTimeInterval(30 * 24 * 3600))
+        _hasReminder = State(initialValue: event?.hasReminder ?? false)
     }
 
     var body: some View {
@@ -46,6 +54,23 @@ struct EventEditorView: View {
                         editorCard(title: "Thời gian") {
                             DatePicker("Bắt đầu", selection: $startDate)
                             DatePicker("Kết thúc", selection: $endDate)
+                        }
+
+                        editorCard(title: "Lặp lại & Nhắc nhở") {
+                            Toggle("Lặp lại hàng tuần", isOn: $isRecurringWeekly)
+                                .tint(Color(red: 0.18, green: 0.58, blue: 1.0))
+
+                            if isRecurringWeekly {
+                                Toggle("Khóa ngày dừng lặp", isOn: $hasRecurrenceLimit)
+                                    .tint(Color.orange)
+
+                                if hasRecurrenceLimit {
+                                    DatePicker("Dừng sau ngày", selection: $recurrenceEndDate, in: startDate..., displayedComponents: .date)
+                                }
+                            }
+
+                            Toggle("Bật nhắc nhở (Đổ chuông)", isOn: $hasReminder)
+                                .tint(Color.yellow)
                         }
 
                         editorCard(title: "Xem trước") {
@@ -112,7 +137,10 @@ struct EventEditorView: View {
             startDate: startDate,
             endDate: endDate,
             category: selectedCategory,
-            isAllDay: isAllDay
+            isAllDay: isAllDay,
+            isRecurringWeekly: isRecurringWeekly,
+            recurrenceEndDate: (isRecurringWeekly && hasRecurrenceLimit) ? recurrenceEndDate : nil,
+            hasReminder: hasReminder
         )
 
         onSave(savedEvent)

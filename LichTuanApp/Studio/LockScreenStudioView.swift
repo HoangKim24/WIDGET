@@ -4,8 +4,9 @@ import PhotosUI
 enum StudioTab: String, CaseIterable, Identifiable {
     case background = "Nền"
     case layout = "Kiểu Lịch"
-    case position = "Vị Trí"
+    case font = "Chữ"
     case color = "Màu Sắc"
+    case position = "Vị Trí"
 
     var id: String { rawValue }
 
@@ -13,8 +14,9 @@ enum StudioTab: String, CaseIterable, Identifiable {
         switch self {
         case .background: return "paintpalette.fill"
         case .layout: return "calendar"
-        case .position: return "arrow.up.and.down.and.sparkles"
+        case .font: return "textformat"
         case .color: return "circle.hexagongrid.fill"
+        case .position: return "arrow.up.and.down.and.sparkles"
         }
     }
 }
@@ -219,10 +221,12 @@ struct LockScreenStudioView: View {
                     backgroundSection
                 case .layout:
                     layoutSection
-                case .position:
-                    positionSection
+                case .font:
+                    fontSection
                 case .color:
                     colorSection
+                case .position:
+                    positionSection
                 }
             }
             .frame(minHeight: 90, maxHeight: 110)
@@ -379,6 +383,54 @@ struct LockScreenStudioView: View {
                     )
                 }
             }
+        }
+    }
+
+    // MARK: - Tab Phông Chữ & Thẻ Kính (Font & Glassmorphism)
+    private var fontSection: some View {
+        VStack(spacing: 8) {
+            // Hàng 1: 4 Phông chữ nghệ thuật
+            HStack(spacing: 8) {
+                ForEach(CalendarFontTheme.allCases) { theme in
+                    Button {
+                        withAnimation(.spring(response: 0.3)) {
+                            config.fontTheme = theme
+                        }
+                    } label: {
+                        VStack(spacing: 3) {
+                            Text("Aa")
+                                .font(theme.font(size: 17, weight: .bold))
+                                .foregroundStyle(config.fontTheme == theme ? Color.black : config.effectiveAccentColor)
+
+                            Text(theme.title)
+                                .font(.system(size: 10, weight: config.fontTheme == theme ? .bold : .medium))
+                                .foregroundStyle(config.fontTheme == theme ? Color.black : Color.white.opacity(0.8))
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 52)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(config.fontTheme == theme ? config.effectiveAccentColor : Color.white.opacity(0.08))
+                        )
+                    }
+                }
+            }
+
+            // Hàng 2: Thanh trượt độ mờ thẻ lịch (Card Opacity)
+            HStack(spacing: 8) {
+                Text("Độ rõ thẻ:")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.white.opacity(0.6))
+
+                Slider(value: $config.cardOpacity, in: 0.2...1.0, step: 0.05)
+                    .tint(config.effectiveAccentColor)
+
+                Text("\(Int(config.cardOpacity * 100))%")
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.7))
+                    .frame(width: 36, alignment: .trailing)
+            }
+            .padding(.horizontal, 4)
         }
     }
 
@@ -695,16 +747,11 @@ struct LockScreenStudioView: View {
     }
 
     private var mockClockTime: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm"
-        return formatter.string(from: Date())
+        Date().timeString
     }
 
     private func vietnameseLockScreenDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "vi_VN")
-        formatter.dateFormat = "EEEE, d 'thg' M"
-        return formatter.string(from: date).capitalized
+        DateTimeUtils.lockScreenDateFormatter.string(from: date).capitalized
     }
 
     // MARK: - Kích Hoạt Phím Tắt Tự Động Đổi Màn Hình Khóa

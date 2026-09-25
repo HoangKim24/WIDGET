@@ -10,12 +10,16 @@ final class EventListViewModel: ObservableObject {
 
     init(store: SharedDataStore = .shared) {
         self.store = store
-        purgeSampleSeedEvents()
+        migrateLegacySeedEventsOnce()
         load()
     }
 
-    /// Tự động dọn sạch các dữ liệu mẫu cũ trên máy của người dùng khi nâng cấp app
-    private func purgeSampleSeedEvents() {
+    /// Đảm bảo chỉ dọn sạch các dữ liệu mẫu cũ đúng 1 lần duy nhất, không quét xóa sự kiện thật của người dùng
+    private func migrateLegacySeedEventsOnce() {
+        let migrationKey = "hasMigratedLegacySeedDataV1"
+        guard !UserDefaults.standard.bool(forKey: migrationKey) else { return }
+        UserDefaults.standard.set(true, forKey: migrationKey)
+
         let sampleTitles: Set<String> = [
             "Họp Giao Ban Đầu Tuần",
             "Xử Lý Dự Án Mới",
@@ -78,15 +82,32 @@ final class EventListViewModel: ObservableObject {
         events = []
     }
 
-    /// Nạp hàng loạt sự kiện mới (từ Lịch iPhone, OCR hoặc file nhập)
-    func importEvents(_ newEvents: [CalendarEvent]) {
+    /// Kiểm tra xem sự kiện có bị trùng lặp với danh sách hiện tại hay không
+    func isDuplicate(event: CalendarEvent) -> Bool {
+        events.contains { $0.isDuplicate(of: event) }
+    }
+
+    /// Nạp hàng loạt sự kiện mới (từ Lịch iPhone, OCR hoặc file nhập) - có tùy chọn bỏ qua trùng lặp
+    func importEvents(_ newEvents: [CalendarEvent], skipDuplicates: Bool = true) {
+        var current = store.loadEvents()
+        var addedCount = 0
+
         for ev in newEvents {
-            store.add(event: ev)
+            if skipDuplicates && current.contains(where: { $0.isDuplicate(of: ev) }) {
+                continue
+            }
+            current.append(ev)
+            addedCount += 1
             if ev.hasReminder {
                 NotificationManager.shared.scheduleNotification(for: ev)
             }
         }
-        load()
+
+        if addedCount > 0 {
+            current.sort { $0.startDate < $1.startDate }
+            store.save(events: current)
+            load()
+        }
     }
 
     /// Khôi phục dữ liệu từ chuỗi JSON sao lưu

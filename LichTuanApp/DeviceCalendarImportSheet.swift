@@ -168,7 +168,7 @@ struct DeviceCalendarImportSheet: View {
                             }
 
                             // Thứ
-                            Text(vietnameseWeekdayShort(item.event.startDate))
+                            Text(item.event.startDate.vietnameseWeekdayShort)
                                 .font(.system(size: 11, weight: .bold))
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 3)
@@ -176,14 +176,14 @@ struct DeviceCalendarImportSheet: View {
                                 .clipShape(RoundedRectangle(cornerRadius: 6))
 
                             // Giờ
-                            Text(formatTimeRange(item.event))
+                            Text(item.event.formattedTimeRange)
                                 .font(.system(size: 12, weight: .bold, design: .monospaced))
                                 .foregroundStyle(.white.opacity(0.9))
 
                             // Tiêu đề
                             Text(item.event.title)
                                 .font(.system(size: 13, weight: .semibold))
-                                .foregroundStyle(eventColor(for: item.event.category))
+                                .foregroundStyle(item.event.category.color)
                                 .lineLimit(1)
 
                             Spacer()
@@ -238,37 +238,5 @@ struct DeviceCalendarImportSheet: View {
         let eventsToImport = fetchedItems.filter { $0.isSelected }.map { $0.event }
         viewModel.importEvents(eventsToImport)
         dismiss()
-    }
-
-    private func vietnameseWeekdayShort(_ date: Date) -> String {
-        let weekday = Calendar.current.component(.weekday, from: date)
-        switch weekday {
-        case 1: return "CN"
-        case 2: return "T2"
-        case 3: return "T3"
-        case 4: return "T4"
-        case 5: return "T5"
-        case 6: return "T6"
-        case 7: return "T7"
-        default: return ""
-        }
-    }
-
-    private func formatTimeRange(_ event: CalendarEvent) -> String {
-        if event.isAllDay { return "Cả ngày" }
-        let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm"
-        return "\(formatter.string(from: event.startDate))–\(formatter.string(from: event.endDate))"
-    }
-
-    private func eventColor(for category: EventCategory) -> Color {
-        switch category {
-        case .work: return Color(red: 0.92, green: 0.30, blue: 0.29)
-        case .personal: return Color(red: 0.18, green: 0.58, blue: 1.0)
-        case .health: return Color(red: 0.28, green: 0.79, blue: 0.89)
-        case .study: return Color(red: 0.98, green: 0.79, blue: 0.14)
-        case .family: return Color(red: 0.91, green: 0.26, blue: 0.58)
-        case .other: return Color(red: 0.42, green: 0.36, blue: 0.91)
-        }
     }
 }

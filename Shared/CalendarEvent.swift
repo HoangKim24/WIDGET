@@ -59,15 +59,22 @@ struct CalendarEvent: Identifiable, Codable, Equatable {
         hasReminder = try container.decodeIfPresent(Bool.self, forKey: .hasReminder) ?? false
     }
 
-    /// Kiểm tra xem sự kiện có diễn ra vào ngày `targetDate` hay không (tính cả lặp lại hàng tuần và khóa giới hạn lặp)
+    /// Kiểm tra xem sự kiện có diễn ra vào ngày `targetDate` hay không (tính cả lặp lại hàng tuần, sự kiện kéo dài nhiều ngày và khóa giới hạn lặp)
     func occurs(on targetDate: Date, calendar: Calendar = .current) -> Bool {
-        if calendar.isDate(startDate, inSameDayAs: targetDate) {
+        let targetStart = calendar.startOfDay(for: targetDate)
+        let eventStart = calendar.startOfDay(for: startDate)
+        let eventEnd = calendar.startOfDay(for: endDate)
+
+        // 1. Kiểm tra sự kiện diễn ra trong ngày hoặc kéo dài qua nhiều ngày
+        if targetStart >= eventStart && targetStart <= eventEnd {
             return true
         }
+
+        // 2. Kiểm tra sự kiện lặp lại hàng tuần
         guard isRecurringWeekly else { return false }
 
         // Không diễn ra trước ngày bắt đầu
-        if targetDate < calendar.startOfDay(for: startDate) {
+        if targetDate < eventStart {
             return false
         }
 

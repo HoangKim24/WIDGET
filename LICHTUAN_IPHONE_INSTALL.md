@@ -98,3 +98,22 @@ Vì đây là app cá nhân bạn tự cài, iOS yêu cầu bạn xác nhận đ
    - Tìm kiếm tác vụ `Cập Nhật Hình Nền Lịch Tuần` của app **Lịch Tuần**.
    - Bấm tiếp dấu **+** tìm tác vụ hệ thống `Đặt hình nền` (Set Wallpaper) của iOS và chọn áp dụng cho Màn hình khóa.
 7. Xong! Kể từ bây giờ, mỗi sáng thức dậy màn hình khóa iPhone 15 của bạn sẽ tự động nhảy lịch trình mới tinh!
+
+---
+
+## 7. Thêm Widget Tiện Ích Lên Màn Hình Khóa & Màn Hình Chính (WidgetKit)
+
+Ngoài tính năng vẽ hình nền, app đã tích hợp đầy đủ hệ sinh thái **Widget thời gian thực**:
+
+### A. Màn hình khóa (Lock Screen Widget):
+1. Chạm và giữ vào Màn hình khóa > Bấm **Tùy chỉnh (Customize)** > Chọn **Màn hình khóa**.
+2. **Dòng chữ trên đồng hồ (Inline Widget)**: Bấm vào dòng ngày tháng phía trên đồng hồ > Chọn **Lịch Tuần** để xem sự kiện tiếp theo ngay lập tức.
+3. **Khung dưới đồng hồ (Rectangular & Circular Widget)**: Bấm vào khung tiện ích dưới đồng hồ > Chọn **Lịch Tuần** (hỗ trợ hiển thị 2 sự kiện kế tiếp hoặc hình tròn đếm việc còn lại).
+
+### B. Màn hình chính (Home Screen Widget):
+1. Chạm giữ vào một khoảng trống trên Màn hình chính cho đến khi các icon rung rinh.
+2. Nhấn dấu **+** ở góc trên cùng bên trái màn hình.
+3. Tìm ứng dụng **Lịch Tuần** trong danh sách:
+   * **Ô Nhỏ (2x2)**: Ngày hôm nay, số lượng việc và sự kiện kế tiếp.
+   * **Ô Chữ Nhật (2x4)**: Khối ngày to rõ bên trái và danh sách 3 việc hôm nay bên phải.
+   * **Bảng Lịch Tuần 7 Cột (4x4)**: Thu nhỏ nguyên bảng lịch 7 ngày (Thứ 2 đến Chủ Nhật) ra ngoài màn hình chính để bao quát cả tuần!

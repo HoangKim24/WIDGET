@@ -76,7 +76,7 @@ final class DeviceCalendarSyncManager: ObservableObject {
                 title: title,
                 startDate: ek.startDate,
                 endDate: ek.endDate,
-                category: inferCategory(from: title),
+                category: EventCategory.infer(from: title),
                 isAllDay: ek.isAllDay,
                 isRecurringWeekly: false,
                 recurrenceEndDate: nil,
@@ -86,33 +86,5 @@ final class DeviceCalendarSyncManager: ObservableObject {
         }
 
         return results.sorted { $0.startDate < $1.startDate }
-    }
-
-    /// Dự đoán danh mục màu sắc thông minh dựa trên từ khóa trong tên sự kiện
-    private func inferCategory(from text: String) -> EventCategory {
-        let lower = text.lowercased()
-        if containsAny(lower, ["họp", "meeting", "làm", "work", "kpi", "báo cáo", "dự án", "deadline", "công ty", "task", "code", "khách", "call", "phỏng vấn"]) {
-            return .work
-        }
-        if containsAny(lower, ["gym", "chạy", "bơi", "yoga", "khám", "thuốc", "thể dục", "relax", "spa", "đi dạo", "bác sĩ", "workout", "fitness"]) {
-            return .health
-        }
-        if containsAny(lower, ["học", "study", "thi", "đọc sách", "lớp", "tiếng anh", "ôn", "bài tập", "lecture", "khóa học", "exam", "course"]) {
-            return .study
-        }
-        if containsAny(lower, ["gia đình", "mẹ", "bố", "con", "chợ", "siêu thị", "nấu", "family", "vợ", "chồng", "nhà", "dọn dẹp", "đón"]) {
-            return .family
-        }
-        if containsAny(lower, ["cafe", "cà phê", "bạn", "phim", "du lịch", "mua sắm", "shopee", "chill", "ăn trưa", "ăn tối", "quán", "nhậu", "party", "sinh nhật"]) {
-            return .personal
-        }
-        return .other
-    }
-
-    private func containsAny(_ text: String, _ keywords: [String]) -> Bool {
-        for kw in keywords where text.contains(kw) {
-            return true
-        }
-        return false
     }
 }
