@@ -87,6 +87,7 @@ enum CalendarExportManager {
     }
 
     /// Kích hoạt bảng chia sẻ hệ thống iOS (Share Sheet)
+    @available(iOSApplicationExtension, unavailable)
     @MainActor
     static func presentShareSheet(items: [Any]) {
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,

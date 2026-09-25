@@ -45,6 +45,7 @@ targets:
     sources:
       - path: LichTuanAppTests
       - path: Shared
+      - path: LichTuanApp/CalendarExportManager.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.hoangkim24.lichtuan.tests
